@@ -111,9 +111,15 @@ export function EnhancedAuthWrapper() {
         </div>
 
         <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-100 text-left text-sm text-gray-500">
-          <p className="font-semibold text-gray-700 mb-1">Project Evaluator Info:</p>
-          <p>Powered by LLaMA-2 & RAG Architecture.</p>
-          <p>Mock login is active for presentations.</p>
+          <p className="font-semibold text-gray-700 mb-1">
+            {language === 'hi' ? 'प्रोजेक्ट इवैल्यूएटर जानकारी:' : language === 'mr' ? 'प्रकल्प मूल्यमापनकर्त्यासाठी माहिती:' : 'Project Evaluator Info:'}
+          </p>
+          <p>
+            {language === 'hi' ? 'LLaMA-2 और RAG आर्किटेक्चर द्वारा संचालित।' : language === 'mr' ? 'LLaMA-2 आणि RAG आर्किटेक्चर द्वारे समर्थित.' : 'Powered by LLaMA-2 & RAG Architecture.'}
+          </p>
+          <p>
+            {language === 'hi' ? 'प्रस्तुतियों के लिए मॉक लॉगिन सक्रिय है।' : language === 'mr' ? 'सादरीकरणासाठी मॉक लॉगिन सक्रिय आहे.' : 'Mock login is active for presentations.'}
+          </p>
         </div>
       </div>
     </div>
