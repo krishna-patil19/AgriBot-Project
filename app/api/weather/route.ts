@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || ""
+const OPENWEATHER_API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY || ""
 
 export async function GET(request: NextRequest) {
   try {

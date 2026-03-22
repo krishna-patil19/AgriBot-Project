@@ -31,6 +31,7 @@ import { VoiceAIInterface } from "@/components/voice-ai-interface"
 import { EnhancedAuthWrapper } from "@/components/enhanced-auth-wrapper"
 import { RAGChatbotFull } from "@/components/rag-chatbot"
 import { FarmerSignup } from "@/components/farmer-signup"
+import { SmartAlertBanner } from "@/components/smart-alert-banner"
 
 function AgribotPlatform() {
   const { farmer, language, setLanguage, logout } = useAuth()
@@ -137,6 +138,8 @@ function AgribotPlatform() {
               </div>
             </div>
           </header>
+
+          <SmartAlertBanner />
 
           <main className="container mx-auto px-4 py-6 space-y-10">
 
