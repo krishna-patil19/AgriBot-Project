@@ -451,7 +451,11 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                 <input ref={datasetInputRef} type="file" className="hidden" accept=".csv,.txt,.pdf,.md,.json" onChange={handleDatasetSelect} />
 
                 {/* Input Bar */}
-                <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-gray-900 px-4 sm:px-6 pt-3 pb-12 sm:py-4">
+                <div className={`flex-shrink-0 px-4 sm:px-6 pt-3 transition-all duration-700 ease-in-out relative z-40
+                    ${messages.length === 0 
+                        ? "mb-[25vh] sm:mb-0 pb-6 sm:pb-4 border-t border-transparent bg-transparent sm:border-slate-200 sm:dark:border-slate-800 sm:bg-white sm:dark:bg-gray-900" 
+                        : "pb-12 sm:py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-gray-900"
+                    }`}>
                     <div className="max-w-3xl mx-auto">
                         {/* Continuous Suggestions (All Languages) */}
                         <div className="mb-3">
@@ -603,13 +607,15 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                                     <button
                                         onClick={() => recorder.isRecording ? recorder.stopRecording() : recorder.startRecording()}
-                                        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                                        className={`rounded-full flex items-center justify-center shadow-lg transition-all duration-500 ease-out ${
+                                            messages.length === 0 ? "w-16 h-16 shadow-xl hover:scale-110" : "w-12 h-12 hover:scale-105"
+                                        }  ${
                                             recorder.isRecording 
                                                 ? "bg-red-500 text-white animate-pulse shadow-red-500/40" 
                                                 : "bg-[#10a37f] dark:bg-emerald-600 text-white shadow-emerald-500/30 active:scale-95"
                                         }`}
                                     >
-                                        <Mic className="w-6 h-6" />
+                                        <Mic className={`transition-all duration-500 ${messages.length === 0 ? "w-8 h-8" : "w-6 h-6"}`} />
                                     </button>
                                 </div>
 
