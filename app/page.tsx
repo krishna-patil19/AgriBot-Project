@@ -67,14 +67,14 @@ function AgribotPlatform() {
   const t = (key: any) => getTranslation(language, key)
 
   const aiAgents: AIAgent[] = [
-    { id: "agri-detect", name: "AgriDetect", description: t("agriDetectDesc"), icon: Scan, success: 94, specialtyKey: "computerVision", metrics: ["Real-time Analysis", "High Accuracy"], color: "bg-red-500" },
-    { id: "seed-sage", name: "Seed Sage", description: t("seedSageDesc"), icon: Sprout, success: 92, specialtyKey: "agronomyAI", metrics: ["Climate-Matched", "Yield Boost"], color: "bg-green-500" },
-    { id: "market-oracle", name: "Market Oracle", description: t("marketOracleDesc"), icon: TrendingUp, success: 95, specialtyKey: "economicsAI", metrics: ["Live Prices", "Trend Analysis"], color: "bg-purple-500" },
-    { id: "weather-intel", name: "Weather Intelligence", description: t("weatherIntelDesc"), icon: CloudRain, success: 89, specialtyKey: "meteorologyAI", metrics: ["Hyper-local Data", "Early Warnings"], color: "bg-blue-500" },
-    { id: "rotation-master", name: "Rotation Master", description: t("rotationMasterDesc"), icon: RotateCcw, success: 88, specialtyKey: "soilOptimizer", metrics: ["Nutrient Balance", "Pest Disruption"], color: "bg-amber-500" },
-    { id: "irrigation-planner", name: "Irrigation Planner", description: t("irrigationPlannerDesc"), icon: Droplets, success: 91, specialtyKey: "resourceAI", metrics: ["Water Savings", "Drought Prep"], color: "bg-cyan-500" },
-    { id: "training-hub", name: "Training Hub", description: t("trainingHubDesc"), icon: BookOpen, success: 96, specialtyKey: "educationAI", metrics: ["Safety First", "Best Practices"], color: "bg-teal-500" },
-    { id: "maha-yojana", name: "MahaYojana AI", description: t("mahaYojanaDesc"), icon: Landmark, success: 91, specialtyKey: "schemesAI", metrics: ["MahaDBT Aid", "PM-KISAN Info"], color: "bg-yellow-500" },
+    { id: "agri-detect", name: "AgriDetect", description: t("agriDetectDesc"), icon: Scan, success: 94, specialtyKey: "computerVision", metrics: [t("metricRealtimeAnalysis"), t("metricHighAccuracy")], color: "bg-red-500" },
+    { id: "seed-sage", name: "Seed Sage", description: t("seedSageDesc"), icon: Sprout, success: 92, specialtyKey: "agronomyAI", metrics: [t("metricClimateMatched"), t("metricYieldBoost")], color: "bg-green-500" },
+    { id: "market-oracle", name: "Market Oracle", description: t("marketOracleDesc"), icon: TrendingUp, success: 95, specialtyKey: "economicsAI", metrics: [t("metricLivePrices"), t("metricTrendAnalysis")], color: "bg-purple-500" },
+    { id: "weather-intel", name: "Weather Intelligence", description: t("weatherIntelDesc"), icon: CloudRain, success: 89, specialtyKey: "meteorologyAI", metrics: [t("metricHyperlocalData"), t("metricEarlyWarnings")], color: "bg-blue-500" },
+    { id: "rotation-master", name: "Rotation Master", description: t("rotationMasterDesc"), icon: RotateCcw, success: 88, specialtyKey: "soilOptimizer", metrics: [t("metricNutrientBalance"), t("metricPestDisruption")], color: "bg-amber-500" },
+    { id: "irrigation-planner", name: "Irrigation Planner", description: t("irrigationPlannerDesc"), icon: Droplets, success: 91, specialtyKey: "resourceAI", metrics: [t("metricWaterSavings"), t("metricDroughtPrep")], color: "bg-cyan-500" },
+    { id: "training-hub", name: "Training Hub", description: t("trainingHubDesc"), icon: BookOpen, success: 96, specialtyKey: "educationAI", metrics: [t("metricSafetyFirst"), t("metricBestPractices")], color: "bg-teal-500" },
+    { id: "maha-yojana", name: "MahaYojana AI", description: t("mahaYojanaDesc"), icon: Landmark, success: 91, specialtyKey: "schemesAI", metrics: [t("metricMahaDBTAid"), t("metricPMKISANInfo")], color: "bg-yellow-500" },
   ]
 
   return (
@@ -128,7 +128,7 @@ function AgribotPlatform() {
                   <div className="flex items-center gap-4 ml-2">
                     <div className="hidden sm:block text-right">
                       <p className="text-sm font-bold leading-none">{farmer?.name}</p>
-                      <p className="text-[10px] text-gray-500 uppercase">{farmer?.farmingType || t("others")} {t("farmerName")}</p>
+                      <p className="text-[10px] text-gray-500 uppercase">{farmer?.farmingType === 'single' ? t('singleCropFarmer') : farmer?.farmingType === 'multiple' ? t('multiCropFarmer') : t('farmerName')}</p>
                     </div>
                     <Button variant="ghost" size="sm" onClick={logout} className="text-red-500 hover:bg-red-50" title={t("logout")}>
                       <LogOut className="h-4 w-4" />
@@ -280,17 +280,17 @@ function AgribotPlatform() {
                       <MapPin className="h-4 w-4 text-emerald-300" />
                       <span className="text-lg font-bold">{farmer?.farmLocation?.district || t("unknownRegion")}</span>
                     </div>
-                    <p className="text-sm opacity-70 leading-tight">Data synchronized across all 7 specialized agents.</p>
+                    <p className="text-sm opacity-70 leading-tight">{t('dataSyncText')}</p>
                   </div>
 
                   <div className="flex flex-col justify-center">
                     <p className="text-emerald-400 text-[10px] font-bold uppercase">{t("soilType")}</p>
-                    <p className="text-xl font-bold capitalize">{farmer?.soilType || "Not Analyzed"}</p>
+                    <p className="text-xl font-bold capitalize">{farmer?.soilType ? t(farmer.soilType.toLowerCase() as any) || farmer.soilType : t('notAnalyzed')}</p>
                   </div>
 
                   <div className="flex flex-col justify-center">
                     <p className="text-emerald-400 text-[10px] font-bold uppercase">{t("farmArea")}</p>
-                    <p className="text-xl font-bold">{farmer?.farmAreaAcres || "0"} Acres</p>
+                    <p className="text-xl font-bold">{farmer?.farmAreaAcres || "0"} {t('acres')}</p>
                   </div>
 
                   <div className="flex items-center justify-end">

@@ -445,15 +445,14 @@ export function RAGChatbotFull({ onBack, initialAgent = null }: RAGChatbotFullPr
                 {/* Input Bar */}
                 <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-gray-900 px-6 py-4">
                     <div className="max-w-3xl mx-auto">
-                        {/* Continuous Devanagari Suggestions (Hindi & Marathi) */}
-                        {(language === "mr" || language === "hi") && (
-                            <div className="mb-3">
-                                <DevanagariSuggestions
-                                    language={language as "hi" | "mr"}
-                                    onSuggestionClick={handleMarathiSuggestionClick}
-                                />
-                            </div>
-                        )}
+                        {/* Continuous Suggestions (All Languages) */}
+                        <div className="mb-3">
+                            <DevanagariSuggestions
+                                language={language}
+                                onSuggestionClick={handleMarathiSuggestionClick}
+                                inputValue={inputValue}
+                            />
+                        </div>
                         <div className="flex items-center gap-3">
                             {/* Media buttons */}
                             <div className="flex items-center gap-1">
@@ -555,6 +554,22 @@ export function RAGChatbotFull({ onBack, initialAgent = null }: RAGChatbotFullPr
 }
 
 // ============================================================
+// GLOBAL AUDIO MANAGER — shared across all MessageBubble instances
+// This ensures only one audio plays at a time across the entire app
+// ============================================================
+let globalCurrentAudio: HTMLAudioElement | null = null
+
+function stopGlobalAudio() {
+    if (globalCurrentAudio) {
+        globalCurrentAudio.pause()
+        globalCurrentAudio = null
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel()
+    }
+}
+
+// ============================================================
 // Message Bubble Component
 // ============================================================
 
@@ -563,36 +578,43 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
     const t = (key: any) => getTranslation(language as any, key)
     const agent = getAgent(message.agentId)
     const [isPlaying, setIsPlaying] = useState(false)
-
-    // TTS implementation using Sarvam Bulbul API via our backend
-    const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
     const [isLoadingAudio, setIsLoadingAudio] = useState(false)
 
-    // Setup cleanup when component unmounts
+    // Translate RAG source names to the selected language
+    const translateSourceName = (source: string): string => {
+        if (language === 'en') return source
+        const sourceMap: Record<string, Record<string, string>> = {
+            'AgriBot Pre-loaded Knowledge': { hi: 'एग्रीबोट पूर्व-लोड ज्ञानकोश', mr: 'ॲग्रीबोट पूर्व-लोड ज्ञानकोष' },
+            'Expert Farmer Call Q&A': { hi: 'विशेषज्ञ किसान कॉल प्रश्नोत्तरी', mr: 'तज्ञ शेतकरी कॉल प्रश्नोत्तरी' },
+            'Falcon Agriculture Dataset': { hi: 'फाल्कन कृषि डेटासेट', mr: 'फाल्कन कृषी डेटासेट' },
+            'KisanVaani Agriculture Q&A': { hi: 'किसानवाणी कृषि प्रश्नोत्तरी', mr: 'किसानवाणी कृषी प्रश्नोत्तरी' },
+            'Local Soil Health': { hi: 'स्थानीय मिट्टी स्वास्थ्य', mr: 'स्थानिक माती आरोग्य' },
+        }
+        return sourceMap[source]?.[language] || source
+    }
+
+    // Track if THIS bubble's audio is the one currently playing globally
+    const myAudioRef = useRef<HTMLAudioElement | null>(null)
+
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (audioElement) {
-                audioElement.pause()
-                audioElement.src = ""
-            }
-            if ("speechSynthesis" in window) {
-                window.speechSynthesis.cancel()
+            if (myAudioRef.current) {
+                if (globalCurrentAudio === myAudioRef.current) {
+                    stopGlobalAudio()
+                }
+                myAudioRef.current = null
             }
         }
-    }, [audioElement])
+    }, [])
 
     const speakWithBrowserTTS = useCallback((text: string) => {
-        if (!("speechSynthesis" in window)) {
-            alert("Sorry, text-to-speech is not supported in your browser.")
-            return
-        }
+        if (!("speechSynthesis" in window)) return
 
-        // Stop any ongoing speech
-        window.speechSynthesis.cancel()
+        stopGlobalAudio()
 
         const utterance = new SpeechSynthesisUtterance(text)
 
-        // Find best matching voice
         const voices = window.speechSynthesis.getVoices()
         const langMap: Record<string, string[]> = {
             "en": ["en-IN", "en-US", "en-GB"],
@@ -611,8 +633,9 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
             utterance.lang = targetLangs[0]
         }
 
-        utterance.rate = 0.9
-        utterance.pitch = 1
+        // Softer, more humble tone
+        utterance.rate = 0.85
+        utterance.pitch = 1.05
 
         utterance.onstart = () => setIsPlaying(true)
         utterance.onend = () => setIsPlaying(false)
@@ -624,46 +647,35 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
     const hasAutoPlayed = useRef<string | null>(null)
 
     const playAudio = useCallback(async (overrideUrl?: string, isAutoPlay = false) => {
-        // If currently playing AND this is NOT an auto-play trigger, stop it
-        // (Auto-play shouldn't stop itself if it somehow re-triggers)
+        // If THIS bubble is currently playing and user clicks stop
         if (isPlaying && !isAutoPlay) {
-            if (audioElement) {
-                audioElement.pause()
-            }
-            if ("speechSynthesis" in window) {
-                window.speechSynthesis.cancel()
-            }
+            stopGlobalAudio()
+            myAudioRef.current = null
             setIsPlaying(false)
             return
         }
 
-        // If currently loading, ignore
         if (isLoadingAudio) return
 
-        // Improved cleaning: remove markdown formatting, links, and code blocks
         const cleanText = message.content
-            .replace(/```[\s\S]*?```/g, "") // Remove code blocks
-            .replace(/#+\s/g, "") // Remove headers
-            .replace(/[*_~`]/g, "") // Remove bold, italic, strikethrough, backticks
-            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1") // Replace links with just their text
-            .replace(/https?:\/\/[^\s]+/g, "") // Remove URLs
-            .replace(/!\[[^\]]*\]\([^\)]+\)/g, "") // Remove images
-            .replace(/>\s/g, "") // Remove blockquote markers
-            .replace(/\|/g, " ") // Remove table dividers
-            .replace(/[-+*]\s/g, " ") // Remove list markers
-            .replace(/\d+\.\s/g, " ") // Remove numbered list markers
-            .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "") // Remove emojis
-            .replace(/[^\w\s\u0900-\u097F\u0980-\u09FF.,!?;:]/g, " ") // Keep only letters, numbers, punctuation, and Devanagari (Hindi/Marathi)
-            .replace(/\s+/g, " ") // Collapse multiple spaces
+            .replace(/```[\s\S]*?```/g, "")
+            .replace(/#+\s/g, "")
+            .replace(/[*_~`]/g, "")
+            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+            .replace(/https?:\/\/[^\s]+/g, "")
+            .replace(/!\[[^\]]*\]\([^\)]+\)/g, "")
+            .replace(/>\s/g, "")
+            .replace(/\|/g, " ")
+            .replace(/[-+*]\s/g, " ")
+            .replace(/\d+\.\s/g, " ")
+            .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
+            .replace(/[^\w\s\u0900-\u097F\u0980-\u09FF.,!?;:]/g, " ")
+            .replace(/\s+/g, " ")
             .trim()
 
-        if (!cleanText) {
-            console.warn("TTS: No speakable content found after cleaning.")
-            return
-        }
+        if (!cleanText) return
 
         try {
-            // Ensure overrideUrl is a string (ignore MouseEvents)
             const urlToUse = typeof overrideUrl === "string" ? overrideUrl : undefined
             const finalAudioUrl = urlToUse || message.audioUrl
             let audioUrl = finalAudioUrl
@@ -671,19 +683,13 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
             if (!audioUrl) {
                 setIsLoadingAudio(true)
 
-                // Call our new TTS backend route
                 const response = await fetch('/api/voice/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: cleanText,
-                        language // 'en', 'hi', or 'mr'
-                    })
+                    body: JSON.stringify({ text: cleanText, language })
                 })
 
-                if (!response.ok) {
-                    throw new Error('Failed to generate audio')
-                }
+                if (!response.ok) throw new Error('Failed to generate audio')
 
                 const ttsData = await response.json()
 
@@ -701,9 +707,12 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
                 }
             }
 
-            // Create and play audio element
+            // CRITICAL: Stop ANY currently playing audio globally before starting new one
+            stopGlobalAudio()
+
             const audio = new Audio(audioUrl)
-            setAudioElement(audio)
+            myAudioRef.current = audio
+            globalCurrentAudio = audio
 
             audio.onplay = () => {
                 setIsPlaying(true)
@@ -713,14 +722,17 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
             audio.onpause = () => setIsPlaying(false)
             audio.onended = () => {
                 setIsPlaying(false)
-                if (!finalAudioUrl) URL.revokeObjectURL(audioUrl!) // Only cleanup if we created it
+                myAudioRef.current = null
+                if (globalCurrentAudio === audio) globalCurrentAudio = null
+                if (!finalAudioUrl) URL.revokeObjectURL(audioUrl!)
             }
 
             audio.onerror = (e) => {
                 console.error("Audio playback error:", e)
                 setIsPlaying(false)
                 setIsLoadingAudio(false)
-                // Fallback to browser TTS if audio file fails
+                myAudioRef.current = null
+                if (globalCurrentAudio === audio) globalCurrentAudio = null
                 speakWithBrowserTTS(cleanText)
             }
 
@@ -728,10 +740,9 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
         } catch (error) {
             console.error("TTS Error:", error)
             setIsLoadingAudio(false)
-            // Fallback to browser TTS
             speakWithBrowserTTS(cleanText)
         }
-    }, [isPlaying, audioElement, isLoadingAudio, message, language, speakWithBrowserTTS])
+    }, [isPlaying, isLoadingAudio, message, language, speakWithBrowserTTS])
 
     // Auto-play for any assistant message
     useEffect(() => {
@@ -843,7 +854,7 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
                         <FileText className="w-3 h-3 text-slate-400" />
                         {message.ragSources.map((src, i) => (
                             <span key={i} className="text-[9px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 font-medium whitespace-nowrap">
-                                {src.source}
+                                {translateSourceName(src.source)}
                             </span>
                         ))}
                     </div>

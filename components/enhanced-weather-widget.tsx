@@ -196,6 +196,32 @@ export function EnhancedWeatherWidget() {
   const WeatherIcon = getWeatherIcon(weatherData.current.icon)
   const advice = getWeatherAdvice(weatherData)
 
+  // Translate OpenWeather description to the selected language
+  const translateWeatherDescription = (desc: string): string => {
+    const descLower = desc.toLowerCase()
+    const map: Record<string, string> = {
+      'clear sky': t('weatherClearSky'),
+      'few clouds': t('weatherFewClouds'),
+      'scattered clouds': t('weatherScatteredClouds'),
+      'broken clouds': t('weatherBrokenClouds'),
+      'overcast clouds': t('weatherOvercastClouds'),
+      'shower rain': t('weatherShowerRain'),
+      'rain': t('weatherRain'),
+      'light rain': t('weatherLightRain'),
+      'moderate rain': t('weatherModerateRain'),
+      'heavy intensity rain': t('weatherHeavyRain'),
+      'heavy rain': t('weatherHeavyRain'),
+      'thunderstorm': t('weatherThunderstorm'),
+      'snow': t('weatherSnow'),
+      'mist': t('weatherMist'),
+      'haze': t('weatherHaze'),
+      'fog': t('weatherFog'),
+      'smoke': t('weatherSmoke'),
+      'dust': t('weatherDust'),
+    }
+    return map[descLower] || desc
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto">
       <Card className="border-green-200 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 shadow-2xl overflow-hidden">
@@ -220,7 +246,7 @@ export function EnhancedWeatherWidget() {
               <CardContent className="p-6 text-center">
                 <WeatherIcon className="h-20 w-20 text-green-600 mx-auto mb-4" />
                 <div className="text-5xl font-bold text-green-800 mb-2">{weatherData.current.temp}°C</div>
-                <div className="text-lg text-green-600 capitalize font-medium">{weatherData.current.description}</div>
+                <div className="text-lg text-green-600 capitalize font-medium">{translateWeatherDescription(weatherData.current.description)}</div>
               </CardContent>
             </Card>
 

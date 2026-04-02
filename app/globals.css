@@ -138,3 +138,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide scrollbar for suggestion pill rows while keeping scroll functionality */
+.suggestions-scroll::-webkit-scrollbar {
+  display: none;
+}

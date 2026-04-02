@@ -28,6 +28,23 @@ interface UseRAGChatOptions {
     initialAgent?: string | null
 }
 
+// Convert base64 audio to Blob URL to bypass browser data URI length limits
+function createAudioBlobUrl(base64: string): string {
+    try {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'audio/mpeg' });
+        return URL.createObjectURL(blob);
+    } catch (e) {
+        console.error("Failed to parse audio base64:", e);
+        return `data:audio/wav;base64,${base64}`;
+    }
+}
+
 export function useRAGChat(options: UseRAGChatOptions = {}) {
     // Store message histories separately for each agent and auto-route mode
     const [messagesMap, setMessagesMap] = useState<Record<string, ChatMessage[]>>({
@@ -122,7 +139,7 @@ export function useRAGChat(options: UseRAGChatOptions = {}) {
                 })
                 const ttsData = await ttsRes.json()
                 if (ttsData.success && ttsData.audioBase64) {
-                    assistantMessage.audioUrl = `data:audio/wav;base64,${ttsData.audioBase64}`
+                    assistantMessage.audioUrl = createAudioBlobUrl(ttsData.audioBase64)
                 }
             } catch (ttsErr) {
                 console.error("TTS generation failed:", ttsErr)
@@ -400,7 +417,7 @@ export function useRAGChat(options: UseRAGChatOptions = {}) {
                     })
                     const ttsData = await ttsRes.json()
                     if (ttsData.success && ttsData.audioBase64) {
-                        assistantMessage.audioUrl = `data:audio/wav;base64,${ttsData.audioBase64}`
+                        assistantMessage.audioUrl = createAudioBlobUrl(ttsData.audioBase64)
 
                         // We no longer auto-play here to avoid "detached" audio.
                         // The MessageBubble will handle auto-play if audioUrl is present.

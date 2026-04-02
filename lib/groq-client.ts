@@ -205,6 +205,9 @@ MANDATORY ACTION: If you find a price in REAL-TIME or LIVE WEB sections, you MUS
 
     fullPrompt += extraContext;
 
+    fullPrompt += `\n\n**CRITICAL CONVERSATIONAL INSTRUCTION**:
+Do NOT explicitly state your inner workings, data sources, or search techniques in your response. NEVER use phrases like "I have used live web data", "According to my web search", "Based on the provided context", or "I fetched this from real-time prices". Smoothly incorporate the information and answer directly and naturally as if you simply know the answer as an expert.`;
+
     return fullPrompt
   }
 
@@ -561,44 +564,49 @@ If a question is highly specific (e.g., specific pest, seed, or market price), r
   private getFallbackResponse(agentId: string, language: string): string {
     const fallbacks: Record<string, Record<string, string>> = {
       "agri-detect": {
-        en: "🔬 AgriDetect is currently processing. Based on common symptoms: ensure proper crop spacing, apply approved fungicides if fungal infection is suspected, and collect a sample for local lab testing. I'll be back with a detailed analysis shortly.",
-        hi: "🔬 AgriDetect वर्तमान में प्रसंस्करण कर रहा है। सामान्य लक्षणों के आधार पर: उचित फसल दूरी सुनिश्चित करें और स्थानीय प्रयोगशाला परीक्षण के लिए नमूना एकत्र करें।",
-        mr: "🔬 AgriDetect सध्या प्रक्रिया करत आहे. सामान्य लक्षणांवर आधारित: योग्य पीक अंतर सुनिश्चित करा आणि स्थानिक प्रयोगशाळा चाचणीसाठी नमुना गोळा करा.",
+        en: "🔬 **AgriDetect Analysis:**\n\n1. **Common Steps for Disease Detection:**\n   - Inspect leaf color, spots, and wilting patterns\n   - Check for visible insects or fungal growth\n   - Compare with known disease reference images\n\n2. **Immediate Actions:**\n   - Separate affected plants if possible\n   - Apply Neem oil spray (5ml/liter) as a safe first treatment\n   - Collect a sample and visit your nearest Krishi Vigyan Kendra (KVK)\n\n⚠️ For a precise diagnosis, please describe symptoms or upload a photo.",
+        hi: "🔬 **AgriDetect विश्लेषण:**\n\n1. **रोग पहचान के सामान्य कदम:**\n   - पत्तों का रंग, धब्बे और मुरझाने का पैटर्न देखें\n   - कीटों या फफूंदी की जांच करें\n\n2. **तुरंत कार्रवाई:**\n   - प्रभावित पौधों को अलग करें\n   - नीम तेल का छिड़काव करें (5ml प्रति लीटर पानी)\n   - नमूना लेकर नजदीकी कृषि विज्ञान केंद्र (KVK) जाएं\n\n⚠️ सटीक निदान के लिए, कृपया लक्षण बताएं या फोटो अपलोड करें।",
+        mr: "🔬 **AgriDetect विश्लेषण:**\n\n1. **रोग ओळखण्याचे सामान्य पायऱ्या:**\n   - पानांचा रंग, डाग आणि कोमेजण्याचे स्वरूप तपासा\n   - कीटक किंवा बुरशी तपासा\n\n2. **त्वरित कारवाई:**\n   - प्रभावित झाडे वेगळी करा\n   - कडुलिंबाच्या तेलाची फवारणी करा (5ml प्रति लीटर पाणी)\n   - नमुना घेऊन जवळच्या कृषी विज्ञान केंद्राला भेट द्या\n\n⚠️ अचूक निदानासाठी, कृपया लक्षणे सांगा किंवा फोटो अपलोड करा.",
       },
       "seed-sage": {
-        en: "🌱 Seed Sage is analyzing your farm profile. For your region, high-yield hybrid varieties with disease resistance are recommended. Consider climate-adapted seeds for optimal results. Full analysis coming shortly.",
-        hi: "🌱 Seed Sage आपके खेत की प्रोफाइल का विश्लेषण कर रहा है। आपके क्षेत्र के लिए रोग प्रतिरोधी उच्च उपज वाली संकर किस्मों की सिफारिश की जाती है।",
-        mr: "🌱 Seed Sage तुमच्या शेताच्या प्रोफाइलचे विश्लेषण करत आहे. तुमच्या प्रदेशासाठी रोग प्रतिरोधी उच्च उत्पादन संकर जातींची शिफारस केली जाते.",
+        en: "🌱 **Seed Sage Recommendation:**\n\n**Popular High-Yield Varieties for Indian Farmers:**\n- **Wheat:** HD-3226 (Pusa Yashasvi), HD-2967 — excellent for North India\n- **Rice:** Pusa Basmati 1121, Swarna (MTU-7029) — disease resistant\n- **Cotton:** BG-II Hybrid, Suraj — good bollworm resistance\n- **Soybean:** JS-9560, MACS-1407 — high yield\n\n💡 **Tip:** Choose seeds certified by ICAR/State Agriculture University. Match variety to your soil type and rainfall pattern.\n\nFor personalized recommendation, please specify your crop, soil type, and location.",
+        hi: "🌱 **Seed Sage की सिफारिश:**\n\n**भारतीय किसानों के लिए लोकप्रिय उच्च-उपज वाली किस्में:**\n- **गेहूं:** HD-3226 (पूसा यशस्वी), HD-2967 — उत्तर भारत के लिए उत्कृष्ट\n- **चावल:** पूसा बासमती 1121, स्वर्णा (MTU-7029) — रोग प्रतिरोधी\n- **कपास:** BG-II हाइब्रिड, सूरज — बॉलवॉर्म प्रतिरोधी\n- **सोयाबीन:** JS-9560, MACS-1407 — उच्च उपज\n\n💡 **सलाह:** ICAR या राज्य कृषि विश्वविद्यालय द्वारा प्रमाणित बीज चुनें। अपनी मिट्टी और बारिश के अनुसार किस्म चुनें।\n\nव्यक्तिगत सिफारिश के लिए, कृपया अपनी फसल, मिट्टी का प्रकार और स्थान बताएं।",
+        mr: "🌱 **Seed Sage ची शिफारस:**\n\n**भारतीय शेतकऱ्यांसाठी लोकप्रिय उच्च-उत्पादन जाती:**\n- **गहू:** HD-3226 (पुसा यशस्वी), HD-2967 — उत्तर भारतासाठी उत्कृष्ट\n- **तांदूळ:** पुसा बासमती 1121, स्वर्णा (MTU-7029) — रोग प्रतिरोधी\n- **कापूस:** BG-II हायब्रीड, सूरज — बोंडअळी प्रतिरोधी\n- **सोयाबीन:** JS-9560, MACS-1407 — उच्च उत्पादन\n\n💡 **सल्ला:** ICAR किंवा राज्य कृषी विद्यापीठाने प्रमाणित केलेले बियाणे निवडा।\n\nवैयक्तिक शिफारशीसाठी, कृपया तुमचे पीक, मातीचा प्रकार आणि स्थान सांगा.",
       },
       "market-oracle": {
-        en: "📊 Market Oracle is fetching latest mandi data. Markets are showing seasonal trends. Check your local mandi for today's rates. Detailed analysis will be available shortly.",
-        hi: "📊 Market Oracle नवीनतम मंडी डेटा प्राप्त कर रहा है। बाजार मौसमी रुझान दिखा रहे हैं। आज की दरों के लिए अपनी स्थानीय मंडी देखें।",
-        mr: "📊 Market Oracle नवीनतम मंडी डेटा मिळवत आहे. बाजार हंगामी कल दाखवत आहेत. आजच्या दरांसाठी तुमची स्थानिक मंडी तपासा.",
+        en: "📊 **Market Oracle Update:**\n\nFor real-time mandi prices, please specify:\n- **Crop name** (e.g., wheat, onion, soybean)\n- **State/District** (e.g., Maharashtra, Punjab)\n\nI can fetch live prices from data.gov.in API.\n\n💡 **General Tip:** Check your local APMC mandi rates and compare with nearby mandis before selling.",
+        hi: "📊 **Market Oracle अपडेट:**\n\nलाइव मंडी भाव के लिए, कृपया बताएं:\n- **फसल का नाम** (जैसे गेहूं, प्याज, सोयाबीन)\n- **राज्य/जिला** (जैसे महाराष्ट्र, पंजाब)\n\nमैं data.gov.in API से लाइव भाव ला सकती हूं।\n\n💡 **सलाह:** बेचने से पहले अपनी स्थानीय APMC मंडी दरों की तुलना आसपास की मंडियों से करें।",
+        mr: "📊 **Market Oracle अपडेट:**\n\nलाइव्ह मंडी भाव साठी, कृपया सांगा:\n- **पिकाचे नाव** (उदा. गहू, कांदा, सोयाबीन)\n- **राज्य/जिल्हा** (उदा. महाराष्ट्र)\n\nमी data.gov.in API वरून लाइव्ह भाव आणू शकते.\n\n💡 **सल्ला:** विकण्यापूर्वी तुमच्या स्थानिक APMC मंडीच्या दरांची जवळच्या मंडींशी तुलना करा.",
       },
       "weather-intel": {
-        en: "🌦️ Weather Intelligence is gathering atmospheric data. General advisory: Monitor local forecasts, prepare for seasonal changes, and ensure proper drainage in your fields.",
-        hi: "🌦️ Weather Intelligence वायुमंडलीय डेटा एकत्र कर रहा है। सामान्य सलाह: स्थानीय पूर्वानुमान की निगरानी करें और अपने खेतों में उचित जल निकासी सुनिश्चित करें।",
-        mr: "🌦️ Weather Intelligence वातावरणीय डेटा गोळा करत आहे. सामान्य सल्ला: स्थानिक अंदाज पहा आणि तुमच्या शेतात योग्य पाणी निचरा सुनिश्चित करा.",
+        en: "🌦️ **Weather Intelligence Advisory:**\n\nFor accurate weather data, please check the weather widget on the dashboard.\n\n**General Advisory:**\n- Monitor local weather forecasts daily\n- Ensure proper drainage in fields before monsoon\n- Cover sensitive crops during extreme temperature events\n- Plan irrigation based on upcoming rainfall predictions",
+        hi: "🌦️ **Weather Intelligence सलाह:**\n\nसटीक मौसम डेटा के लिए, कृपया डैशबोर्ड पर मौसम विजेट देखें।\n\n**सामान्य सलाह:**\n- रोज़ स्थानीय मौसम पूर्वानुमान देखें\n- मानसून से पहले खेतों में पानी की निकासी सुनिश्चित करें\n- अत्यधिक तापमान में संवेदनशील फसलों को ढकें\n- आगामी बारिश के अनुसार सिंचाई की योजना बनाएं",
+        mr: "🌦️ **Weather Intelligence सल्ला:**\n\nअचूक हवामान डेटासाठी, कृपया डॅशबोर्डवरील हवामान विजेट पहा.\n\n**सामान्य सल्ला:**\n- दररोज स्थानिक हवामान अंदाज तपासा\n- पावसाळ्यापूर्वी शेतातील पाणी निचऱ्याची व्यवस्था करा\n- अत्यंत तापमानात संवेदनशील पिके झाका\n- पुढील पावसानुसार सिंचनाचे नियोजन करा",
       },
       "rotation-master": {
-        en: "🔄 Rotation Master is analyzing your soil profile. General tip: Alternate between legumes and cereals each season to maintain nitrogen balance and break pest cycles.",
-        hi: "🔄 Rotation Master आपकी मिट्टी प्रोफाइल का विश्लेषण कर रहा है। सामान्य सुझाव: नाइट्रोजन संतुलन बनाए रखने के लिए हर मौसम में दलहन और अनाज बदलें।",
-        mr: "🔄 Rotation Master तुमच्या मातीच्या प्रोफाइलचे विश्लेषण करत आहे. सामान्य सल्ला: नायट्रोजन संतुलन राखण्यासाठी प्रत्येक हंगामात कडधान्य आणि तृणधान्य बदला.",
+        en: "🔄 **Rotation Master Tip:**\n\n**Basic Crop Rotation Plan:**\n- Season 1: Legumes (moong, chana) — Fix nitrogen\n- Season 2: Cereals (wheat, rice) — Use stored nitrogen\n- Season 3: Oilseeds or vegetables — Break pest cycle\n\n💡 Always alternate between legumes and cereals for healthy soil.",
+        hi: "🔄 **Rotation Master सुझाव:**\n\n**बुनियादी फसल चक्र योजना:**\n- सीजन 1: दलहन (मूंग, चना) — नाइट्रोजन स्थिर करें\n- सीजन 2: अनाज (गेहूं, चावल) — संग्रहीत नाइट्रोजन का उपयोग करें\n- सीजन 3: तिलहन या सब्जी — कीट चक्र तोड़ें\n\n💡 स्वस्थ मिट्टी के लिए हमेशा दलहन और अनाज को बदल-बदल कर बोएं।",
+        mr: "🔄 **Rotation Master सल्ला:**\n\n**मूलभूत पीक फेरपालट योजना:**\n- हंगाम 1: कडधान्य (मूग, हरभरा) — नायट्रोजन स्थिर करा\n- हंगाम 2: तृणधान्य (गहू, तांदूळ) — साठवलेला नायट्रोजन वापरा\n- हंगाम 3: तेलबिया किंवा भाजीपाला — कीटक चक्र तोडा\n\n💡 निरोगी मातीसाठी नेहमी कडधान्य आणि तृणधान्य बदलत पेरा.",
       },
       "irrigation-planner": {
-        en: "💧 Irrigation Planner is calculating water needs. General tip: Switch to drip irrigation to save 40-60% water. Water early morning or late evening to minimize evaporation.",
-        hi: "💧 Irrigation Planner जल आवश्यकता की गणना कर रहा है। सामान्य सुझाव: 40-60% पानी बचाने के लिए ड्रिप सिंचाई अपनाएं।",
-        mr: "💧 Irrigation Planner पाणी आवश्यकता मोजत आहे. सामान्य सल्ला: 40-60% पाणी वाचवण्यासाठी ठिबक सिंचन वापरा.",
+        en: "💧 **Irrigation Planner Tip:**\n\n- **Drip Irrigation:** Saves 40-60% water, best for vegetables and orchard crops\n- **Sprinkler:** Good for wheat, groundnut, pulses\n- **Flood:** Only when water is abundant\n\n💡 Water early morning (6-8 AM) or late evening (5-7 PM) to reduce evaporation.",
+        hi: "💧 **Irrigation Planner सुझाव:**\n\n- **ड्रिप सिंचाई:** 40-60% पानी बचाता है, सब्जियों और बागवानी के लिए सबसे अच्छा\n- **स्प्रिंकलर:** गेहूं, मूंगफली, दलहन के लिए अच्छा\n- **बाढ़ सिंचाई:** केवल जब पानी प्रचुर हो\n\n💡 वाष्पीकरण कम करने के लिए सुबह (6-8 बजे) या शाम (5-7 बजे) सिंचाई करें।",
+        mr: "💧 **Irrigation Planner सल्ला:**\n\n- **ठिबक सिंचन:** 40-60% पाणी वाचवते, भाजीपाला आणि बागायतीसाठी सर्वोत्तम\n- **तुषार सिंचन:** गहू, भुईमूग, कडधान्यासाठी चांगले\n- **पाट पाणी:** फक्त जेव्हा पाणी भरपूर असेल\n\n💡 बाष्पीभवन कमी करण्यासाठी सकाळी (6-8) किंवा संध्याकाळी (5-7) सिंचन करा.",
       },
       "training-hub": {
-        en: "📚 Training Hub is preparing your guidance. Safety reminder: Always wear PPE when handling chemicals, follow recommended dosages, and maintain proper storage conditions.",
-        hi: "📚 Training Hub आपका मार्गदर्शन तैयार कर रहा है। सुरक्षा अनुस्मारक: रसायनों को संभालते समय हमेशा PPE पहनें।",
-        mr: "📚 Training Hub तुमचे मार्गदर्शन तयार करत आहे. सुरक्षा स्मरणपत्र: रसायने हाताळताना नेहमी PPE वापरा.",
+        en: "📚 **Training Hub - Safety Guidelines:**\n\n🦺 **Always follow these safety rules:**\n1. Wear gloves, mask, and goggles when using chemicals\n2. Follow the recommended dosage on the product label\n3. Store pesticides away from food and children\n4. Wash hands and clothes after application\n\n🌿 **Organic Alternative:** Neem oil (5ml/L) is effective against many pests.",
+        hi: "📚 **Training Hub - सुरक्षा दिशानिर्देश:**\n\n🦺 **हमेशा इन सुरक्षा नियमों का पालन करें:**\n1. रसायनों का उपयोग करते समय दस्ताने, मास्क और चश्मा पहनें\n2. उत्पाद लेबल पर अनुशंसित खुराक का पालन करें\n3. कीटनाशकों को खाने और बच्चों से दूर रखें\n4. छिड़काव के बाद हाथ और कपड़े धोएं\n\n🌿 **जैविक विकल्प:** नीम तेल (5ml/L) कई कीटों के खिलाफ प्रभावी है।",
+        mr: "📚 **Training Hub - सुरक्षा मार्गदर्शक:**\n\n🦺 **नेहमी या सुरक्षा नियमांचे पालन करा:**\n1. रसायने वापरताना हातमोजे, मास्क आणि चष्मा वापरा\n2. उत्पादनाच्या लेबलवरील शिफारस केलेल्या डोसचे पालन करा\n3. कीटकनाशके अन्न आणि मुलांपासून दूर ठेवा\n4. फवारणीनंतर हात आणि कपडे धुवा\n\n🌿 **सेंद्रिय पर्याय:** कडुलिंबाचे तेल (5ml/L) अनेक कीटकांविरुद्ध प्रभावी आहे.",
+      },
+      "maha-yojana": {
+        en: "🏛️ **MahaYojana AI - Government Schemes:**\n\n**Key Schemes for Farmers:**\n1. **PM-KISAN:** ₹6,000/year direct benefit\n2. **PMFBY:** Crop insurance at low premium\n3. **MahaDBT:** Subsidies for farm equipment\n4. **Soil Health Card:** Free soil testing\n\n📄 **Documents needed:** Aadhaar, 7/12 extract, bank passbook\n🔗 Apply at: mahadbt.maharashtra.gov.in",
+        hi: "🏛️ **MahaYojana AI - सरकारी योजनाएं:**\n\n**किसानों के लिए प्रमुख योजनाएं:**\n1. **पीएम-किसान:** ₹6,000/वर्ष सीधा लाभ\n2. **PMFBY:** कम प्रीमियम पर फसल बीमा\n3. **महाDBT:** कृषि उपकरण पर सब्सिडी\n4. **मृदा स्वास्थ्य कार्ड:** मुफ्त मिट्टी परीक्षण\n\n📄 **जरूरी दस्तावेज:** आधार, 7/12 उतारा, बैंक पासबुक\n🔗 आवेदन करें: mahadbt.maharashtra.gov.in",
+        mr: "🏛️ **MahaYojana AI - सरकारी योजना:**\n\n**शेतकऱ्यांसाठी प्रमुख योजना:**\n1. **पीएम-किसान:** ₹6,000/वर्ष थेट लाभ\n2. **PMFBY:** कमी हप्त्यात पीक विमा\n3. **महाDBT:** शेती उपकरणांवर अनुदान\n4. **मृदा आरोग्य कार्ड:** मोफत माती परीक्षण\n\n📄 **आवश्यक कागदपत्रे:** आधार, 7/12 उतारा, बँक पासबुक\n🔗 अर्ज करा: mahadbt.maharashtra.gov.in",
       },
       "agri-bot": {
-        en: "🎙️ Hello! I'm your AgriBot AI Assistant. I can help with crop diseases, seed selection, market prices, weather, irrigation, and more. What would you like to know about today?",
-        hi: "🎙️ नमस्ते! मैं आपका AgriBot AI सहायक हूं। मैं फसल रोग, बीज चयन, बाजार मूल्य, मौसम, सिंचाई और बहुत कुछ में मदद कर सकता हूं।",
-        mr: "🎙️ नमस्कार! मी तुमचा AgriBot AI सहाय्यक आहे. मी पीक रोग, बियाणे निवड, बाजार भाव, हवामान, सिंचन आणि बरेच काही मदत करू शकतो.",
+        en: "🌾 Hello! I'm your AgriBot AI Assistant.\n\nI can help with:\n- 🔬 Crop disease detection\n- 🌱 Seed recommendations\n- 📊 Live mandi prices\n- 🌦️ Weather-based farming advice\n- 💧 Irrigation planning\n- 🏛️ Government schemes\n\nWhat would you like to know?",
+        hi: "🌾 नमस्ते! मैं आपकी AgriBot AI सहायक हूं।\n\nमैं इनमें मदद कर सकती हूं:\n- 🔬 फसल रोग पहचान\n- 🌱 बीज सिफारिश\n- 📊 लाइव मंडी भाव\n- 🌦️ मौसम आधारित खेती सलाह\n- 💧 सिंचाई योजना\n- 🏛️ सरकारी योजनाएं\n\nआप क्या जानना चाहते हैं?",
+        mr: "🌾 नमस्कार! मी तुमची AgriBot AI सहाय्यक आहे.\n\nमी यामध्ये मदत करू शकते:\n- 🔬 पीक रोग ओळख\n- 🌱 बियाणे शिफारस\n- 📊 लाइव्ह मंडी भाव\n- 🌦️ हवामान आधारित शेती सल्ला\n- 💧 सिंचन नियोजन\n- 🏛️ सरकारी योजना\n\nतुम्हाला काय जाणून घ्यायचे आहे?",
       },
     }
 

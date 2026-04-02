@@ -190,11 +190,11 @@ export class SarvamClient {
                 body: JSON.stringify({
                     inputs: [ttsText],
                     target_language_code: langCode,
-                    model: "bulbul:v1",
-                    speaker: "meera",
+                    model: "bulbul:v2",
+                    speaker: "anushka",
                     pitch: 0,
-                    pace: 1.1,
-                    loudness: 1.5,
+                    pace: 0.9,
+                    loudness: 1.2,
                     speech_sample_rate: 24000
                 }),
             })

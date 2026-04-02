@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,20 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
 import { type Language, getTranslation } from "@/lib/translations"
+
+// Import the global audio manager from rag-chatbot to prevent cross-component collision
+// We'll use our own reference but always stop the global one first
+let voiceWidgetAudio: HTMLAudioElement | null = null
+
+function stopVoiceWidgetAudio() {
+    if (voiceWidgetAudio) {
+        voiceWidgetAudio.pause()
+        voiceWidgetAudio = null
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel()
+    }
+}
 
 interface VoiceAIInterfaceProps {
   language: Language
@@ -25,8 +39,6 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
   )
   const recorder = useVoiceRecorder()
   const wasRecordingRef = useRef(false)
-  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const t = (key: any) => getTranslation(language as Language, key)
 
@@ -39,8 +51,8 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
   useEffect(() => {
     const greetings = {
       en: `Hello ${farmer?.name || "Farmer"}! I'm your AgriBot Voice AI assistant. Ask me about weather, market rates, or crop advice.`,
-      hi: `नमस्कार ${farmer?.name || "किसान जी"}! मैं आपका AgriBot वॉइस AI सहायक हूं। मुझसे मौसम, बाजार दर, या फसल सलाह के बारे में पूछें।`,
-      mr: `नमस्कार ${farmer?.name || "शेतकरी जी"}! मी तुमचा AgriBot व्हॉइस AI सहायक आहे. मला हवामान, बाजार दर किंवा पीक सल्ल्याबद्दल विचारा.`,
+      hi: `नमस्कार ${farmer?.name || "किसान जी"}! मैं आपकी AgriBot वॉइस AI सहायिका हूँ। मुझसे मौसम, बाजार दर, या फसल सलाह के बारे में पूछें।`,
+      mr: `नमस्कार ${farmer?.name || "शेतकरी जी"}! मी तुमची AgriBot व्हॉइस AI सहायिका आहे. मला हवामान, बाजार दर किंवा पीक सल्ल्याबद्दल विचारा.`,
     }
 
     const greeting = greetings[language as keyof typeof greetings] || greetings.en
@@ -74,6 +86,118 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
     }
   }
 
+  // Use Sarvam TTS to speak text (handles Hindi/Marathi numbers correctly)
+  const speakWithSarvam = useCallback(async (text: string) => {
+    try {
+      // Clean text for TTS
+      const cleanText = text
+        .replace(/```[\s\S]*?```/g, "")
+        .replace(/#+\s/g, "")
+        .replace(/[*_~`]/g, "")
+        .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+        .replace(/\|/g, " ")
+        .replace(/\n+/g, " ")
+        .trim()
+
+      if (!cleanText) return
+
+      const ttsRes = await fetch("/api/voice/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleanText, language })
+      })
+
+      const ttsData = await ttsRes.json()
+
+      if (ttsData.success && ttsData.audioBase64) {
+        const byteCharacters = atob(ttsData.audioBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(blob);
+
+        // Stop any currently playing audio globally
+        stopVoiceWidgetAudio()
+
+        const audio = new Audio(audioUrl);
+        voiceWidgetAudio = audio;
+
+        audio.onplay = () => setIsSpeaking(true)
+        audio.onended = () => {
+          setIsSpeaking(false)
+          voiceWidgetAudio = null
+          URL.revokeObjectURL(audioUrl)
+        }
+        audio.onerror = () => {
+          setIsSpeaking(false)
+          voiceWidgetAudio = null
+          URL.revokeObjectURL(audioUrl)
+          // Last resort: browser TTS fallback
+          speakWithBrowserTTS(cleanText)
+        }
+
+        await audio.play()
+      } else {
+        // Fallback to browser TTS
+        speakWithBrowserTTS(text)
+      }
+    } catch (err) {
+      console.error("Sarvam TTS failed:", err)
+      speakWithBrowserTTS(text)
+    }
+  }, [language])
+
+  // Browser TTS fallback (used only when Sarvam fails)
+  const speakWithBrowserTTS = (text: string) => {
+    if (!("speechSynthesis" in window)) return
+
+    stopVoiceWidgetAudio()
+
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/#+\s/g, "")
+      .replace(/[*_~`]/g, "")
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+      .replace(/\|/g, " ")
+      .replace(/\n+/g, " ")
+      .trim()
+
+    if (!cleanText) return
+
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+
+    const voices = window.speechSynthesis.getVoices()
+    const langMap: Record<string, string[]> = {
+      "en": ["en-IN", "en-US", "en-GB"],
+      "hi": ["hi-IN", "hi"],
+      "mr": ["mr-IN", "mr"]
+    }
+
+    const targetLangs = langMap[language as keyof typeof langMap] || ["en-IN"]
+    const selectedVoice = voices.find(v =>
+      targetLangs.some(l => v.lang.toLowerCase().includes(l.toLowerCase()))
+    )
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice
+    } else {
+      utterance.lang = targetLangs[0]
+    }
+
+    // Softer, humble tone
+    utterance.rate = 0.85
+    utterance.pitch = 1.05
+
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+
+    window.speechSynthesis.speak(utterance)
+  }
+
   const processAudio = async (audioFile: File) => {
     setIsProcessing(true)
 
@@ -85,7 +209,6 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
       formData.append("language", language)
 
       // Add placeholder user message to conversation
-      const userMsgId = Date.now().toString()
       setConversation((prev) => [
         ...prev,
         {
@@ -114,8 +237,7 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
         prev.map((msg, i) => i === prev.length - 1 && msg.type === "user" ? { ...msg, message: text } : msg)
       )
 
-      // Get AI response (Route through RAG to ensure correct formatting and translation)
-      // Map conversation to the format expected by the API
+      // Get AI response
       const conversationHistory = conversation.map(msg => ({
         role: msg.type === "user" ? "user" : "assistant",
         content: msg.message
@@ -123,9 +245,7 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
 
       const chatResponse = await fetch("/api/rag/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
           language,
@@ -139,7 +259,6 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
       }
 
       const { response } = await chatResponse.json()
-      console.log("[v0] AI response generated")
 
       // Add AI response to conversation
       setConversation((prev) => [
@@ -151,58 +270,8 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
         },
       ])
 
-      // Generate and play TTS using OpenAI
-      try {
-        const ttsRes = await fetch("/api/voice/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: response,
-            language: language
-          })
-        })
-
-        const ttsData = await ttsRes.json()
-
-        if (ttsData.success && ttsData.audioBase64) {
-          // Convert base64 to Blob to bypass browser data URI limits
-          const byteCharacters = atob(ttsData.audioBase64);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: 'audio/mpeg' });
-          const audioUrl = URL.createObjectURL(blob);
-
-          if (audioRef.current) {
-            audioRef.current.pause();
-          }
-
-          const audio = new Audio(audioUrl);
-          audioRef.current = audio;
-
-          audio.onplay = () => setIsSpeaking(true)
-          audio.onended = () => {
-            setIsSpeaking(false)
-            URL.revokeObjectURL(audioUrl)
-          }
-          audio.onerror = () => {
-            console.error("Audio playback error")
-            setIsSpeaking(false)
-            URL.revokeObjectURL(audioUrl)
-            speakResponse(response)
-          }
-
-          await audio.play()
-        } else {
-          // Fallback to browser TTS if Sarvam fails
-          speakResponse(response)
-        }
-      } catch (ttsErr) {
-        console.error("Voice AI TTS failed:", ttsErr)
-        speakResponse(response)
-      }
+      // Generate and play TTS using Sarvam (handles Hindi numbers correctly)
+      await speakWithSarvam(response)
     } catch (error) {
       console.error("[v0] Error processing audio:", error)
       setConversation((prev) =>
@@ -225,68 +294,8 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
     }
   }
 
-  const speakResponse = (text: string) => {
-    if (!("speechSynthesis" in window)) return
-
-    console.log("[v0] Speaking AI response")
-
-    // Stop any ongoing speech
-    window.speechSynthesis.cancel()
-
-    // Clean text for smoother speech
-    const cleanText = text
-      .replace(/```[\s\S]*?```/g, "")
-      .replace(/#+\s/g, "")
-      .replace(/[*_~`]/g, "")
-      .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
-      .replace(/\|/g, " ")
-      .replace(/\n+/g, " ")
-      .trim()
-
-    if (!cleanText) return
-
-    const utterance = new SpeechSynthesisUtterance(cleanText)
-
-    // Find best matching voice
-    const voices = window.speechSynthesis.getVoices()
-    const langMap: Record<string, string[]> = {
-      "en": ["en-IN", "en-US", "en-GB"],
-      "hi": ["hi-IN", "hi"],
-      "mr": ["mr-IN", "mr"]
-    }
-
-    const targetLangs = langMap[language as keyof typeof langMap] || ["en-IN"]
-    const selectedVoice = voices.find(v =>
-      targetLangs.some(l => v.lang.toLowerCase().includes(l.toLowerCase()))
-    )
-
-    if (selectedVoice) {
-      utterance.voice = selectedVoice
-    } else {
-      utterance.lang = targetLangs[0]
-    }
-
-    utterance.rate = 0.9
-    utterance.pitch = 1
-
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    utterance.onerror = () => setIsSpeaking(false)
-
-    speechSynthesisRef.current = utterance
-    window.speechSynthesis.speak(utterance)
-  }
-
   const stopSpeaking = () => {
-    // Stop custom audio
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-    }
-    // Stop browser TTS
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel()
-    }
+    stopVoiceWidgetAudio()
     setIsSpeaking(false)
   }
 
@@ -420,7 +429,7 @@ export function VoiceAIInterface({ language }: VoiceAIInterfaceProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => speakResponse(msg.message)}
+                        onClick={() => speakWithSarvam(msg.message)}
                         className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
                       >
                         <Volume2 className="w-3 h-3" />
