@@ -454,60 +454,60 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                                 inputValue={inputValue}
                             />
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 sm:gap-3">
                             {/* Media buttons */}
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                                 <button
                                     onClick={() => imageInputRef.current?.click()}
-                                    className="p-2.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+                                    className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
                                     title="Upload image for analysis"
                                 >
-                                    <ImageIcon className="w-5 h-5" />
+                                    <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
                                 <button
                                     onClick={() => audioInputRef.current?.click()}
-                                    className="p-2.5 rounded-xl text-slate-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all"
+                                    className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-slate-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all"
                                     title="Upload audio message"
                                 >
-                                    <Music className="w-5 h-5" />
+                                    <Music className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
                                 <button
                                     onClick={() => datasetInputRef.current?.click()}
-                                    className="p-2.5 rounded-xl text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
+                                    className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
                                     title="Upload dataset for knowledge base"
                                 >
-                                    <Paperclip className="w-5 h-5" />
+                                    <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
 
                                 {/* Real-time Microphone Button */}
                                 <button
                                     onClick={() => recorder.isRecording ? recorder.stopRecording() : recorder.startRecording()}
-                                    className={`p-2.5 rounded-xl transition-all ${recorder.isRecording
+                                    className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl transition-all ${recorder.isRecording
                                         ? "bg-red-100 text-red-600 animate-pulse"
                                         : "text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                                         }`}
                                     title={recorder.isRecording ? "Stop Recording" : "Speak to AI"}
                                 >
-                                    <Mic className="w-5 h-5" />
+                                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
 
                                 {/* Devanagari Keyboard Trigger (Hindi & Marathi) */}
                                 {(language === "mr" || language === "hi") && (
                                     <button
                                         onClick={() => setDevKeyboardOpen(!devKeyboardOpen)}
-                                        className={`p-2.5 rounded-xl transition-all ${devKeyboardOpen
+                                        className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl transition-all ${devKeyboardOpen
                                             ? "bg-emerald-100 text-emerald-600"
                                             : "text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                                             }`}
                                         title={language === "hi" ? "Hindi Virtual Keyboard" : "Marathi Virtual Keyboard"}
                                     >
-                                        <Keyboard className="w-5 h-5" />
+                                        <Keyboard className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </button>
                                 )}
                             </div>
 
                             {/* Text input */}
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                                 <input
                                     ref={inputRef}
                                     type="text"
@@ -521,7 +521,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                                                 ? t("placeholderAgent").replace("{name}", getAgent(selectedAgent).name)
                                                 : t("placeholderDefault")
                                     }
-                                    className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all placeholder:text-slate-400"
+                                    className="w-full px-3 py-2 sm:px-5 sm:py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all placeholder:text-slate-400 truncate"
                                     disabled={isLoading}
                                 />
                             </div>
@@ -530,9 +530,9 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                             <Button
                                 onClick={handleSend}
                                 disabled={(!inputValue.trim() && !pendingImageFile) || isLoading}
-                                className="h-11 w-11 p-0 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-lg shadow-emerald-500/25 disabled:opacity-30 disabled:shadow-none flex-shrink-0 transition-all"
+                                className="h-9 w-9 sm:h-11 sm:w-11 p-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-sm sm:shadow-lg shadow-emerald-500/25 disabled:opacity-30 disabled:shadow-none flex-shrink-0 transition-all"
                             >
-                                <Send className="w-5 h-5 text-white" />
+                                <Send className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                             </Button>
                         </div>
                         {devKeyboardOpen && (language === "mr" || language === "hi") && (
