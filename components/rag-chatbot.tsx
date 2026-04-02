@@ -53,9 +53,10 @@ const AGENTS = [
 interface RAGChatbotFullProps {
     onBack?: () => void
     initialAgent?: string | null
+    isMobileCompact?: boolean
 }
 
-export function RAGChatbotFull({ onBack, initialAgent = null }: RAGChatbotFullProps) {
+export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = false }: RAGChatbotFullProps) {
     const { farmer, language, setLanguage } = useAuth()
     const t = (key: any) => getTranslation(language, key)
     const [inputValue, setInputValue] = useState("")
@@ -174,7 +175,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null }: RAGChatbotFullPr
     const getAgent = (id?: string) => AGENTS.find(a => a.id === id) || AGENTS[6]
 
     return (
-        <div className="h-screen flex bg-slate-50 dark:bg-gray-950 overflow-hidden">
+        <div className={`${isMobileCompact ? "h-full" : "h-screen"} flex bg-slate-50 dark:bg-gray-950 overflow-hidden`}>
             {/* ============================================================ */}
             {/* SIDEBAR — Agent Details */}
             {/* ============================================================ */}

@@ -98,7 +98,7 @@ const getWeatherAdvice = (weather: WeatherData) => {
   }
 }
 
-export function EnhancedWeatherWidget() {
+export function EnhancedWeatherWidget({ compact = false }: { compact?: boolean } = {}) {
   const { farmer, language } = useAuth()
   const t = (key: any) => getTranslation(language as Language, key)
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
@@ -220,6 +220,22 @@ export function EnhancedWeatherWidget() {
       'dust': t('weatherDust'),
     }
     return map[descLower] || desc
+  }
+
+  if (compact) {
+    return (
+      <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <div className="flex items-center gap-2">
+          <WeatherIcon className="h-5 w-5 text-green-100" />
+          <span className="font-bold text-[15px]">{weatherData.current.temp}°C</span>
+          <span className="text-[11px] opacity-90 truncate max-w-[120px]">{translateWeatherDescription(weatherData.current.description)}</span>
+        </div>
+        <div className="flex items-center gap-1 text-[11px] opacity-90 bg-black/10 px-2 py-1 rounded-full">
+          <MapPin className="h-3 w-3" />
+          <span className="truncate max-w-[90px]">{weatherData.location.split(',')[0]}</span>
+        </div>
+      </div>
+    )
   }
 
   return (

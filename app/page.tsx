@@ -79,17 +79,19 @@ function AgribotPlatform() {
 
   return (
     <>
-      {/* FULL-PAGE CHATBOT VIEW */}
-      {showChatbot && (
-        <RAGChatbotFull onBack={() => {
-          setShowChatbot(false)
-          setActiveAgentId(null)
-        }} initialAgent={activeAgentId} />
-      )}
+      {/* DESKTOP VIEW */}
+      <div className="hidden md:block">
+        {/* FULL-PAGE CHATBOT VIEW */}
+        {showChatbot && (
+          <RAGChatbotFull onBack={() => {
+            setShowChatbot(false)
+            setActiveAgentId(null)
+          }} initialAgent={activeAgentId} />
+        )}
 
-      {/* DASHBOARD VIEW */}
-      {!showChatbot && (
-        <div className="min-h-screen bg-slate-50 dark:bg-gray-950">
+        {/* DASHBOARD VIEW */}
+        {!showChatbot && (
+          <div className="min-h-screen bg-slate-50 dark:bg-gray-950">
           {/* 1. TOP HEADER */}
           <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-green-200 shadow-sm">
             <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -312,7 +314,46 @@ function AgribotPlatform() {
             <p className="text-xs text-slate-400">{t("footerText")}</p>
           </footer>
         </div>
-      )}
+        )}
+      </div>
+
+      {/* MOBILE VIEW: Always show Chatbot directly with small weather footer */}
+      <div className="md:hidden flex flex-col h-[100dvh] bg-slate-50 dark:bg-gray-950">
+        <header className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-green-200 px-4 py-3 flex items-center justify-between shadow-sm z-50">
+          <div className="flex items-center gap-2">
+            <Tractor className="w-6 h-6 text-green-600" />
+            <h1 className="text-base font-bold text-green-800 dark:text-green-400 tracking-tight">{t("agribotHub")}</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <div className="relative group">
+              <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 transition-colors">
+                <Globe className="w-4 h-4" />
+                <span className="text-xs font-bold">
+                  {language === "en" ? "EN" : language === "hi" ? "HI" : "MR"}
+                </span>
+              </button>
+              <div className="absolute right-0 top-full mt-1 w-28 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                <button onClick={() => setLanguage("en")} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700">English</button>
+                <button onClick={() => setLanguage("hi")} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700">हिंदी</button>
+                <button onClick={() => setLanguage("mr")} className="w-full text-left px-3 py-2 text-xs border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">मराठी</button>
+              </div>
+            </div>
+            {/* Logout */}
+            <Button variant="ghost" size="sm" onClick={logout} className="h-8 w-8 p-0 text-red-500 hover:bg-red-50">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </header>
+
+        <div className="flex-1 relative overflow-hidden">
+          <RAGChatbotFull isMobileCompact={true} initialAgent={activeAgentId} onBack={() => {}} />
+        </div>
+
+        <div className="flex-shrink-0 z-50">
+          <EnhancedWeatherWidget compact={true} />
+        </div>
+      </div>
       {showUpdateProfile && (
         <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm shadow-2xl overflow-y-auto pt-10 pb-20 px-4">
           <div className="max-w-2xl mx-auto relative">
