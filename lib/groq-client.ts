@@ -178,7 +178,8 @@ CRITICAL RULES:
       extraContext += `\n\n**CRITICAL PERSONALITY & LANGUAGE REQUIREMENT**: 
 1. You MUST provide your ENTIRE response in Hindi (Devanagari script) only. 
 2. **GENDER**: You are a female assistant. You MUST use feminine grammatical markers (स्त्रीलिंग) in your Hindi (e.g., use "रही हूँ", "करूँगी", "बोलती हूँ" instead of masculine forms).
-3. Do NOT use English words or Roman script (except for official URLs). Ensure your tone is helpful and suitable for an Indian farmer.`;
+3. Do NOT use English letters or Roman script EVER. If you need to use an English word (like "AgriBot", "Fertilizer", etc.), you MUST phonetically transliterate it into Devanagari script (e.g., "एग्रीबॉट"). Sarvam TTS will fail if you include A-Z characters!
+4. ONLY address the user by the EXACT Name provided in their profile. NEVER invent, hallucinate, or append a surname (e.g., if Name is "Sakshi", ONLY say "साक्षी", never "साक्षी कुलकर्णी").`;
     } else if (language === "mr") {
       if (ragContext) extraContext += `\n\n📚 ज्ञानकोष आणि डेटा स्रोत (CONTEXT & DATA SOURCES):\n${ragContext}\n\nमहत्त्वाची सूचना: खालील क्रमाने डेटाला प्राधान्य द्या:\n1. "REAL-TIME MANDI PRICES" (लाइव्ह सरकारी डेटा)\n2. "LIVE WEB CONTEXT" (इंटरनेट शोध निकाल)\n3. "KNOWLEDGE BASE" (दस्तऐवज)\n\nजर ज्ञानकोषात किंमत नसेल पण REAL-TIME किंवा LIVE WEB मध्ये असेल, तर ती किंमत सांगा.`;
       if (safetyWarnings.length > 0) extraContext += `\n\n⚠️ सुरक्षा चेतावणी:\n${safetyWarnings.join("\n")}\n\nमहत्त्वाचे: या प्रश्नाने सुरक्षा धोके सक्रिय केले आहेत. तुम्ही:\n1. नुकसान होईल अशी कोणतीही माहिती देऊ नका.\n2. फक्त सुरक्षित, मंजूर पद्धतींची शिफारस करा.\n3. रसायनांवर चर्चा करताना योग्य PPE वर भर द्या.`;
@@ -186,7 +187,8 @@ CRITICAL RULES:
       extraContext += `\n\n**CRITICAL PERSONALITY & LANGUAGE REQUIREMENT**: 
 1. You MUST provide your ENTIRE response in Marathi (Devanagari script) only. 
 2. **GENDER**: You are a female assistant. You MUST use feminine grammatical markers (स्त्रीलिंग) in your Marathi (e.g., use "करते", "सांगते", "आले आहे" instead of masculine forms).
-3. Do NOT use English words or Roman script (except for official URLs). Ensure your tone is helpful and suitable for a Maharashtra farmer.`;
+3. Do NOT use English letters or Roman script EVER. If you need to use an English word (like "AgriBot", "Fertilizer", etc.), you MUST phonetically transliterate it into Devanagari script (e.g., "एग्रीबॉट"). Sarvam TTS will fail if you include A-Z characters!
+4. ONLY address the user by the EXACT Name provided in their profile. NEVER invent, hallucinate, or append a surname (e.g., if Name is "Sakshi", ONLY say "साक्षी", never "साक्षी कुलकर्णी").`;
     } else {
       extraContext += `\n\n📚 CONTEXT & DATA SOURCES:\n${ragContext}\n\nIMPORTANT INSTRUCTION: Priorities the data source in this order: 
 1. "REAL-TIME MANDI PRICES" (Official API Data)
