@@ -113,18 +113,22 @@ function AgribotPlatform() {
                   <span className="hidden sm:inline text-sm font-semibold">{t("ragChatbot")}</span>
                 </Button>
                 {/* Language Switcher */}
-                <div className="relative group ml-2 border-l border-green-200 dark:border-green-800 pl-4">
+                <div className="relative ml-2 border-l border-green-200 dark:border-green-800 pl-4">
                   <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
                     <Globe className="w-4 h-4" />
                     <span className="text-sm font-semibold">
                       {language === "en" ? "EN" : language === "hi" ? "HI" : "MR"}
                     </span>
                   </button>
-                  <div className="absolute right-0 top-full mt-2 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                    <button onClick={() => setLanguage("en")} className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 ${language === "en" ? "text-emerald-600 font-bold bg-emerald-50/50" : "text-slate-700"}`}>English</button>
-                    <button onClick={() => setLanguage("hi")} className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 ${language === "hi" ? "text-emerald-600 font-bold bg-emerald-50/50" : "text-slate-700"}`}>हिंदी</button>
-                    <button onClick={() => setLanguage("mr")} className={`w-full text-left px-4 py-2 text-sm border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 ${language === "mr" ? "text-emerald-600 font-bold bg-emerald-50/50" : "text-slate-700"}`}>मराठी</button>
-                  </div>
+                  <select 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    value={language || "en"}
+                    onChange={(e) => setLanguage(e.target.value as "en" | "hi" | "mr")}
+                  >
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी</option>
+                    <option value="mr">मराठी</option>
+                  </select>
                 </div>
                 {farmer && (
                   <div className="flex items-center gap-4 ml-2">
@@ -326,18 +330,22 @@ function AgribotPlatform() {
           </div>
           <div className="flex items-center gap-2">
             {/* Language Switcher */}
-            <div className="relative group">
+            <div className="relative">
               <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 transition-colors">
                 <Globe className="w-4 h-4" />
                 <span className="text-xs font-bold">
                   {language === "en" ? "EN" : language === "hi" ? "HI" : "MR"}
                 </span>
               </button>
-              <div className="absolute right-0 top-full mt-1 w-28 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                <button onClick={() => setLanguage("en")} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700">English</button>
-                <button onClick={() => setLanguage("hi")} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700">हिंदी</button>
-                <button onClick={() => setLanguage("mr")} className="w-full text-left px-3 py-2 text-xs border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">मराठी</button>
-              </div>
+              <select 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  value={language || "en"}
+                  onChange={(e) => setLanguage(e.target.value as "en" | "hi" | "mr")}
+              >
+                  <option value="en">English</option>
+                  <option value="hi">हिंदी</option>
+                  <option value="mr">मराठी</option>
+              </select>
             </div>
             {/* Logout */}
             <Button variant="ghost" size="sm" onClick={logout} className="h-8 w-8 p-0 text-red-500 hover:bg-red-50">
