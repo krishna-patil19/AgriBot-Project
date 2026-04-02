@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`[STT Route] Processing language: ${language}, file: ${audioFile.name}`)
 
-    // Switch: Use Sarvam for regional languages to get native Devanagari script
-    if (language === "hi" || language === "mr") {
+    // Switch: Use Sarvam for ALL languages to ensure high accuracy for Indian accents including English
+    if (language === "hi" || language === "mr" || language === "en") {
       try {
         const sarvamApiKey = process.env.SARVAM_API_KEY;
         if (sarvamApiKey) {
