@@ -585,7 +585,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                                 )}
                             </div>
 
-                            <div className="relative flex items-center justify-between">
+                            <div className="relative flex items-center justify-between min-h-[4rem]">
                                 {/* Left Side Attachments */}
                                 <div className="flex items-center gap-2 text-slate-400">
                                     <button onClick={() => imageInputRef.current?.click()} className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-rose-100 hover:text-rose-500 transition-colors">
