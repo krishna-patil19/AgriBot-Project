@@ -543,7 +543,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                             </Button>
                         </div>
                         {devKeyboardOpen && (language === "mr" || language === "hi") && (
-                            <div className="mt-4">
+                            <div className="mt-4 pb-12 sm:pb-0">
                                 <DevanagariKeys
                                     language={language as "hi" | "mr"}
                                     onKeyClick={handleMarathiKeyClick}
@@ -662,7 +662,7 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
 
         if (isLoadingAudio) return
 
-        const cleanText = message.content
+        let cleanText = message.content
             .replace(/```[\s\S]*?```/g, "")
             .replace(/#+\s/g, "")
             .replace(/[*_~`]/g, "")
@@ -677,6 +677,13 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
             .replace(/[^\w\s\u0900-\u097F\u0980-\u09FF.,!?;:]/g, " ")
             .replace(/\s+/g, " ")
             .trim()
+
+        // Sarvam TTS struggles with Arabic digits (1, 2) in Hindi/Marathi strings, so we convert them 
+        // strictly to native Devanagari numerals (१, २) to ensure correct pronunciation
+        if (language === 'hi' || language === 'mr') {
+            const devDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९']
+            cleanText = cleanText.replace(/\d/g, match => devDigits[parseInt(match)])
+        }
 
         if (!cleanText) return
 
