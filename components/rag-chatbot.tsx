@@ -353,11 +353,11 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                         {/* Welcome state */}
                         {messages.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-4 sm:py-20 h-full">
-                                <div className="hidden sm:flex w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-100 to-green-50 items-center justify-center mb-6 shadow-sm">
+                                <div className="flex w-20 h-20 sm:w-20 sm:h-20 rounded-[2rem] bg-gradient-to-br from-emerald-100 to-green-50 items-center justify-center mb-4 sm:mb-6 shadow-sm">
                                     <Sparkles className="w-10 h-10 text-emerald-600" />
                                 </div>
-                                <h3 className="hidden sm:block text-xl font-bold text-slate-800 dark:text-white mb-2">{t("personalAssistantTitle")}</h3>
-                                <p className="hidden sm:block text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md leading-relaxed">
+                                <h3 className="block text-2xl sm:text-xl font-black text-slate-800 dark:text-white mb-2 text-center tracking-tight">{t("personalAssistantTitle")}</h3>
+                                <p className="block text-sm sm:text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md leading-relaxed px-4">
                                     {t("personalAssistantDesc")}
                                 </p>
                                 <div className="hidden md:grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 w-full max-w-2xl px-2 sm:px-0 mt-auto sm:mt-0">
@@ -451,11 +451,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                 <input ref={datasetInputRef} type="file" className="hidden" accept=".csv,.txt,.pdf,.md,.json" onChange={handleDatasetSelect} />
 
                 {/* Input Bar */}
-                <div className={`flex-shrink-0 px-4 sm:px-6 pt-3 transition-all duration-700 ease-in-out relative z-40
-                    ${messages.length === 0 
-                        ? "mb-[25vh] sm:mb-0 pb-6 sm:pb-4 border-t border-transparent bg-transparent sm:border-slate-200 sm:dark:border-slate-800 sm:bg-white sm:dark:bg-gray-900" 
-                        : "pb-12 sm:py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-gray-900"
-                    }`}>
+                <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-gray-900 px-4 sm:px-6 pt-3 pb-8 sm:py-4 relative z-40">
                     <div className="max-w-3xl mx-auto">
                         {/* Continuous Suggestions (All Languages) */}
                         <div className="mb-3">
