@@ -451,7 +451,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                 <input ref={datasetInputRef} type="file" className="hidden" accept=".csv,.txt,.pdf,.md,.json" onChange={handleDatasetSelect} />
 
                 {/* Input Bar */}
-                <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-gray-900 px-6 py-4">
+                <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-gray-900 px-4 sm:px-6 pt-3 pb-12 sm:py-4">
                     <div className="max-w-3xl mx-auto">
                         {/* Continuous Suggestions (All Languages) */}
                         <div className="mb-3">
