@@ -37,6 +37,7 @@ function AgribotPlatform() {
   const { farmer, language, setLanguage, logout } = useAuth()
   const [activeSection, setActiveSection] = useState("dashboard")
   const [showChatbot, setShowChatbot] = useState(false)
+  const [mobileView, setMobileView] = useState<"chat" | "dashboard">("chat")
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null)
   const [uploadStatus, setUploadStatus] = useState<string | null>(null)
   const [showUpdateProfile, setShowUpdateProfile] = useState(false)
@@ -79,8 +80,8 @@ function AgribotPlatform() {
 
   return (
     <>
-      {/* DESKTOP VIEW */}
-      <div className="hidden md:block">
+      {/* DESKTOP VIEW (And Mobile Dashboard) */}
+      <div className={`${(!showChatbot && mobileView === 'dashboard') ? 'block' : 'hidden md:block'}`}>
         {/* FULL-PAGE CHATBOT VIEW */}
         {showChatbot && (
           <RAGChatbotFull onBack={() => {
@@ -105,6 +106,7 @@ function AgribotPlatform() {
                   onClick={() => {
                     setActiveAgentId(null)
                     setShowChatbot(true)
+                    setMobileView("chat")
                   }}
                   className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-full px-5 gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:from-emerald-600 hover:to-green-700 transition-all"
                   title={t("chatbotTooltip")}
@@ -184,6 +186,7 @@ function AgribotPlatform() {
                       onActivate={() => {
                         setActiveAgentId(agent.id)
                         setShowChatbot(true)
+                        setMobileView("chat")
                       }}
                       language={language}
                     />
@@ -321,8 +324,8 @@ function AgribotPlatform() {
         )}
       </div>
 
-      {/* MOBILE VIEW: Always show Chatbot directly with small weather footer */}
-      <div className="md:hidden flex flex-col h-[100dvh] bg-slate-50 dark:bg-gray-950">
+      {/* MOBILE VIEW: Chatbot interface layout */}
+      <div className={`${mobileView === 'chat' ? 'flex' : 'hidden'} md:hidden flex-col h-[100dvh] bg-slate-50 dark:bg-gray-950`}>
         <header className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-green-200 px-4 py-3 flex items-center justify-between shadow-sm z-50">
           <div className="flex items-center gap-2">
             <Tractor className="w-6 h-6 text-green-600" />
@@ -355,7 +358,7 @@ function AgribotPlatform() {
         </header>
 
         <div className="flex-1 relative overflow-hidden">
-          <RAGChatbotFull isMobileCompact={true} initialAgent={activeAgentId} onBack={() => {}} />
+          <RAGChatbotFull isMobileCompact={true} initialAgent={activeAgentId} onBack={() => setMobileView("dashboard")} />
         </div>
 
         <div className="flex-shrink-0 z-50">
