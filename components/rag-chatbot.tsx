@@ -92,15 +92,17 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
     useEffect(() => {
         // Only process if we just stopped recording (transition from true -> false)
         if (wasRecordingRef.current && !recorder.isRecording && recorder.recordingTime > 0) {
-            const audioFile = recorder.getAudioFile()
-            if (audioFile) {
-                handleVoiceMessage(audioFile, imagePreview)
-                // If an image was used with voice, clear it after processing
-                if (imagePreview) {
-                    setImagePreview(null)
-                    setPendingImageFile(null)
+            const processAudio = async () => {
+                const audioFile = await recorder.getWavAudioFile()
+                if (audioFile) {
+                    handleVoiceMessage(audioFile, imagePreview)
+                    if (imagePreview) {
+                        setImagePreview(null)
+                        setPendingImageFile(null)
+                    }
                 }
             }
+            processAudio()
         }
         wasRecordingRef.current = recorder.isRecording
     }, [recorder.isRecording, recorder.recordingTime, handleVoiceMessage, imagePreview, recorder])

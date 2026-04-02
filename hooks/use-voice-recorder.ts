@@ -12,8 +12,55 @@ export interface VoiceRecorderHook {
     resumeRecording: () => void
     getAudioBlob: () => Blob | null
     getAudioFile: (filename?: string) => File | null
+    getWavAudioFile: (filename?: string) => Promise<File | null>
     hasPermission: boolean
     requestPermission: () => Promise<boolean>
+}
+
+// Client-side WebM to WAV Transcoding Utilities
+function createWaveFileData(audioBuffer: AudioBuffer): ArrayBuffer {
+    const numOfChan = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const length = audioBuffer.length * numOfChan * 2 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+    const channels = [];
+    let offset = 0, pos = 0;
+
+    // write WAVE header
+    setUint32(0x46464952); // "RIFF"
+    setUint32(length - 8); // file length - 8
+    setUint32(0x45564157); // "WAVE"
+    setUint32(0x20746d66); // "fmt " chunk
+    setUint32(16);         // length = 16
+    setUint16(1);          // PCM (uncompressed)
+    setUint16(numOfChan);
+    setUint32(sampleRate);
+    setUint32(sampleRate * 2 * numOfChan); // avg. bytes/sec
+    setUint16(numOfChan * 2); // block-align
+    setUint16(16);         // 16-bit
+    setUint32(0x61746164); // "data" - chunk
+    setUint32(length - pos - 4); // chunk length
+    
+    for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
+        channels.push(audioBuffer.getChannelData(i));
+    }
+    
+    // write interleaved PCM data
+    while (pos < length) {
+        for (let i = 0; i < numOfChan; i++) {
+             let sample = Math.max(-1, Math.min(1, channels[i][offset])); 
+             sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+             view.setInt16(pos, sample, true); 
+             pos += 2;
+        }
+        offset++; 
+    }
+    
+    function setUint16(data: number) { view.setUint16(pos, data, true); pos += 2; }
+    function setUint32(data: number) { view.setUint32(pos, data, true); pos += 4; }
+    
+    return buffer;
 }
 
 export function useVoiceRecorder(): VoiceRecorderHook {
@@ -125,6 +172,25 @@ export function useVoiceRecorder(): VoiceRecorderHook {
         return new File([blob], filename, { type: blob.type })
     }, [getAudioBlob])
 
+    // Convert deeply incompatible browser `.webm` into uncompressed `.wav` for APIs like Sarvam
+    const getWavAudioFile = useCallback(async (filename = "recording.wav") => {
+        const originalBlob = getAudioBlob()
+        if (!originalBlob) return null
+
+        try {
+            const arrayBuffer = await originalBlob.arrayBuffer();
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            
+            const wavBuffer = createWaveFileData(audioBuffer);
+            const wavBlob = new Blob([wavBuffer], { type: "audio/wav" });
+            return new File([wavBlob], filename, { type: "audio/wav" })
+        } catch(e) {
+            console.error("Transcoding to WAV failed, returning fallback WebM", e)
+            return new File([originalBlob], "recording.webm", { type: originalBlob.type })
+        }
+    }, [getAudioBlob])
+
     return useMemo(() => ({
         isRecording,
         isPaused,
@@ -135,6 +201,7 @@ export function useVoiceRecorder(): VoiceRecorderHook {
         resumeRecording,
         getAudioBlob,
         getAudioFile,
+        getWavAudioFile,
         hasPermission,
         requestPermission
     }), [
@@ -147,6 +214,7 @@ export function useVoiceRecorder(): VoiceRecorderHook {
         resumeRecording,
         getAudioBlob,
         getAudioFile,
+        getWavAudioFile,
         hasPermission,
         requestPermission
     ])
