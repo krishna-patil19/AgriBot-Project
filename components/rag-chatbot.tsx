@@ -360,7 +360,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                                 <p className="hidden sm:block text-sm text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md leading-relaxed">
                                     {t("personalAssistantDesc")}
                                 </p>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 w-full max-w-2xl px-2 sm:px-0 mt-auto sm:mt-0">
+                                <div className="hidden md:grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 w-full max-w-2xl px-2 sm:px-0 mt-auto sm:mt-0">
                                     {[
                                         { emoji: "🔬", text: t("detectDisease"), query: "My wheat leaves have brown spots and yellowing, what disease is this?" },
                                         { emoji: "🌱", text: t("bestSeeds"), query: "What are the best wheat seeds for sandy soil in Rajasthan?" },
@@ -377,7 +377,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                                         </button>
                                     ))}
                                 </div>
-                                <div className="flex items-center gap-4 sm:gap-6 mt-6 sm:mt-8 mb-4 sm:mb-0">
+                                <div className="hidden md:flex items-center gap-4 sm:gap-6 mt-6 sm:mt-8 mb-4 sm:mb-0">
                                     <button onClick={() => imageInputRef.current?.click()} className="flex flex-col items-center gap-1.5 group">
                                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center group-hover:bg-rose-100 transition-colors">
                                             <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" />
