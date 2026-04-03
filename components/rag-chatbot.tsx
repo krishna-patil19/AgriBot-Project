@@ -60,7 +60,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
     const { farmer, language, setLanguage } = useAuth()
     const t = (key: any) => getTranslation(language, key)
     const [inputValue, setInputValue] = useState("")
-    const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [sidebarOpen, setSidebarOpen] = useState(!isMobileCompact)
     const [devKeyboardOpen, setDevKeyboardOpen] = useState(false)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [pendingImageFile, setPendingImageFile] = useState<File | null>(null)
