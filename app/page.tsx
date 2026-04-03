@@ -21,7 +21,8 @@ import {
   Upload,
   MessageCircle,
   Globe,
-  Landmark
+  Landmark,
+  LayoutDashboard
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { getTranslation } from "@/lib/translations"
@@ -332,6 +333,16 @@ function AgribotPlatform() {
             <h1 className="text-base font-bold text-green-800 dark:text-green-400 tracking-tight">{t("agribotHub")}</h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Dashboard Navigation */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileView("dashboard")}
+              className="h-8 gap-1.5 px-3 text-green-700 border-green-200 bg-green-50 hover:bg-green-100 rounded-full text-xs font-semibold"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              {t("dashboard")}
+            </Button>
             {/* Language Switcher */}
             <div className="relative">
               <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 transition-colors">

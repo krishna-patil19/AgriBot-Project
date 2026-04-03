@@ -164,37 +164,13 @@ export function EnhancedWeatherWidget({ compact = false }: { compact?: boolean }
     }
   }, [farmer, handleRefresh])
 
-  if (loading) {
-    return (
-      <div className="w-full max-w-6xl mx-auto">
-        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-xl">
-          <CardContent className="p-12 text-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-green-600 mx-auto mb-4" />
-            <span className="text-xl text-green-700">{t("analyzingWeather")} {profileLocation}...</span>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (error || !weatherData) {
-    return (
-      <div className="w-full max-w-6xl mx-auto">
-        <Card className="border-red-200 bg-red-50 shadow-xl">
-          <CardContent className="p-12 text-center">
-            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-700 text-lg mb-4">{error}</p>
-            <Button onClick={handleRefresh} className="bg-red-600 hover:bg-red-700">
-              {t("retryWeather")} {profileLocation}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const WeatherIcon = getWeatherIcon(weatherData.current.icon)
-  const advice = getWeatherAdvice(weatherData)
+  // Locale-aware number formatter with explicit Devanagari digits for Hindi/Marathi
+  const locale = language === "mr" ? "mr-IN" : language === "hi" ? "hi-IN" : "en-IN"
+  const numberFormatter = new Intl.NumberFormat(locale, {
+    numberingSystem: language === "hi" || language === "mr" ? "deva" : "latn",
+    maximumFractionDigits: 2,
+  })
+  const fmtNum = (n: number) => numberFormatter.format(n)
 
   // Translate OpenWeather description to the selected language
   const translateWeatherDescription = (desc: string): string => {
@@ -222,12 +198,44 @@ export function EnhancedWeatherWidget({ compact = false }: { compact?: boolean }
     return map[descLower] || desc
   }
 
+  if (loading) {
+    return (
+      <div className="w-full max-w-6xl mx-auto">
+        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-xl">
+          <CardContent className="p-6 text-center">
+            <RefreshCw className="h-6 w-6 animate-spin text-green-600 mx-auto mb-3" />
+            <span className="text-base text-green-700">{t("analyzingWeather")} {profileLocation}...</span>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error || !weatherData) {
+    return (
+      <div className="w-full max-w-6xl mx-auto">
+        <Card className="border-red-200 bg-red-50 shadow-xl">
+          <CardContent className="p-6 text-center">
+            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-3" />
+            <p className="text-red-700 text-sm mb-3">{error}</p>
+            <Button onClick={handleRefresh} className="bg-red-600 hover:bg-red-700" size="sm">
+              {t("retryWeather")} {profileLocation}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const WeatherIcon = getWeatherIcon(weatherData.current.icon)
+  const advice = getWeatherAdvice(weatherData)
+
   if (compact) {
     return (
       <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
         <div className="flex items-center gap-2">
           <WeatherIcon className="h-5 w-5 text-green-100" />
-          <span className="font-bold text-[15px]">{weatherData.current.temp}°C</span>
+          <span className="font-bold text-[15px]">{fmtNum(weatherData.current.temp)}°C</span>
           <span className="text-[11px] opacity-90 truncate max-w-[120px]">{translateWeatherDescription(weatherData.current.description)}</span>
         </div>
         <div className="flex items-center gap-1 text-[11px] opacity-90 bg-black/10 px-2 py-1 rounded-full">
@@ -240,80 +248,80 @@ export function EnhancedWeatherWidget({ compact = false }: { compact?: boolean }
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      <Card className="border-green-200 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 shadow-2xl overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white pb-6">
-          <CardTitle className="flex items-center gap-3 text-2xl font-bold">
-            <CloudRain className="h-8 w-8" />
+      <Card className="border-green-200 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 shadow-xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-5">
+          <CardTitle className="flex items-center gap-2 text-base font-bold">
+            <CloudRain className="h-5 w-5" />
             {t("weatherTitle")}
           </CardTitle>
-          <div className="flex items-center gap-2 text-green-100">
-            <MapPin className="h-5 w-5" />
-            <span className="text-lg">{weatherData.location}</span>
-            <Badge variant="secondary" className="ml-2 bg-white/20 text-white border-white/30">
+          <div className="flex items-center gap-2 text-green-100 mt-0.5">
+            <MapPin className="h-3.5 w-3.5" />
+            <span className="text-sm">{weatherData.location}</span>
+            <Badge variant="secondary" className="ml-1 bg-white/20 text-white border-white/30 text-[10px] py-0 px-1.5">
               {t("live")}
             </Badge>
           </div>
         </CardHeader>
 
-        <CardContent className="p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* Current Temp */}
-            <Card className="bg-white border-green-200 shadow-lg">
-              <CardContent className="p-6 text-center">
-                <WeatherIcon className="h-20 w-20 text-green-600 mx-auto mb-4" />
-                <div className="text-5xl font-bold text-green-800 mb-2">{weatherData.current.temp}°C</div>
-                <div className="text-lg text-green-600 capitalize font-medium">{translateWeatherDescription(weatherData.current.description)}</div>
+            <Card className="bg-white border-green-200 shadow-sm">
+              <CardContent className="p-4 text-center">
+                <WeatherIcon className="h-12 w-12 text-green-600 mx-auto mb-2" />
+                <div className="text-4xl font-bold text-green-800 mb-1">{fmtNum(weatherData.current.temp)}°C</div>
+                <div className="text-sm text-green-600 capitalize font-medium">{translateWeatherDescription(weatherData.current.description)}</div>
               </CardContent>
             </Card>
 
             {/* Metrics */}
-            <Card className="bg-white border-blue-200 shadow-lg">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex justify-between">
-                  <span className="flex items-center gap-2"><Droplets className="w-5 h-5 text-blue-500" /> {t("humidity")}</span>
-                  <span className="font-bold">{weatherData.current.humidity}%</span>
+            <Card className="bg-white border-blue-200 shadow-sm">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="flex items-center gap-1.5"><Droplets className="w-4 h-4 text-blue-500" /> {t("humidity")}</span>
+                  <span className="font-bold">{fmtNum(weatherData.current.humidity)}%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="flex items-center gap-2"><Wind className="w-5 h-5 text-gray-500" /> {t("wind")}</span>
-                  <span className="font-bold">{weatherData.current.windSpeed} m/s</span>
+                <div className="flex justify-between text-sm">
+                  <span className="flex items-center gap-1.5"><Wind className="w-4 h-4 text-gray-500" /> {t("wind")}</span>
+                  <span className="font-bold">{fmtNum(weatherData.current.windSpeed)} m/s</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="flex items-center gap-2"><Gauge className="w-5 h-5 text-purple-500" /> {t("pressure")}</span>
-                  <span className="font-bold">{weatherData.current.pressure} hPa</span>
+                <div className="flex justify-between text-sm">
+                  <span className="flex items-center gap-1.5"><Gauge className="w-4 h-4 text-purple-500" /> {t("pressure")}</span>
+                  <span className="font-bold">{fmtNum(weatherData.current.pressure ?? 0)} hPa</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Smart Advice */}
-            <Card className={`bg-gradient-to-br ${advice.color} text-white shadow-lg`}>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Brain className="w-5 h-5" /> {t("agribotAdvice")}
+            <Card className={`bg-gradient-to-br ${advice.color} text-white shadow-sm`}>
+              <CardContent className="p-4">
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <Brain className="w-4 h-4" /> {t("agribotAdvice")}
                 </h3>
-                <p className="text-white/90 leading-relaxed">{t(advice.messageKey as any)}</p>
+                <p className="text-white/90 leading-relaxed text-sm">{t(advice.messageKey as any)}</p>
               </CardContent>
             </Card>
           </div>
 
           {/* 7-Day Mini Forecast */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-4">
             {weatherData.daily.slice(0, 7).map((day, i) => {
               const DayIcon = getWeatherIcon(day.icon)
               return (
-                <div key={i} className="bg-white p-3 rounded-xl border border-green-100 text-center shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">
-                    {i === 0 ? t("today") : new Date(Date.now() + i * 86400000).toLocaleDateString(language === "mr" ? "mr-IN" : language === "hi" ? "hi-IN" : "en-IN", { weekday: "short" })}
+                <div key={i} className="bg-white p-2 rounded-xl border border-green-100 text-center shadow-sm">
+                  <div className="text-[10px] text-gray-500 mb-0.5">
+                    {i === 0 ? t("today") : new Date(Date.now() + i * 86400000).toLocaleDateString(locale, { weekday: "short" })}
                   </div>
-                  <DayIcon className="w-6 h-6 mx-auto my-2 text-green-600" />
-                  <div className="text-sm font-bold">{day.temp.max}°</div>
+                  <DayIcon className="w-5 h-5 mx-auto my-1 text-green-600" />
+                  <div className="text-xs font-bold">{fmtNum(day.temp.max)}°</div>
                 </div>
               )
             })}
           </div>
 
           <div className="flex justify-center">
-            <Button onClick={handleRefresh} size="lg" className="bg-green-600 hover:bg-green-700">
-              <RefreshCw className="mr-2 h-4 w-4" /> {t("syncWeather")} {profileLocation}
+            <Button onClick={handleRefresh} size="sm" className="bg-green-600 hover:bg-green-700">
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> {t("syncWeather")} {profileLocation}
             </Button>
           </div>
         </CardContent>
