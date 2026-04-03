@@ -298,7 +298,7 @@ export function RAGChatbotFull({ onBack, initialAgent = null, isMobileCompact = 
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 sm:gap-3">
                             {!sidebarOpen && (
-                                <button onClick={() => setSidebarOpen(true)} className="hidden md:block p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 mr-1">
+                                <button onClick={() => setSidebarOpen(true)} className="block p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 mr-1">
                                     <ChevronLeft className="w-4 h-4 rotate-180" />
                                 </button>
                             )}
