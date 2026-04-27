@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { FarmerData } from "@/contexts/auth-context"
-
-import { farmerDatabase, registeredEmails } from "@/lib/db"
+import { supabase } from "@/lib/supabase"
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,16 +13,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (registeredEmails.has(data.email)) {
+    // Check if email already exists in Supabase
+    const { data: existing } = await supabase
+      .from("farmers")
+      .select("email")
+      .eq("email", data.email)
+      .single()
+
+    if (existing) {
       return NextResponse.json(
         { error: "Email already exists. Please use a different email or sign in." },
         { status: 409 },
       )
     }
 
-    // Create new farmer record
+    // Build new farmer record
     const newFarmer: FarmerData = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: data.name,
       age: Number.parseInt(data.age),
       country: data.country || "India",
@@ -39,8 +45,30 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     }
 
-    registeredEmails.add(data.email)
-    farmerDatabase.set(data.email, { ...newFarmer, password: data.password })
+    // Insert into Supabase farmers table
+    const { error: insertError } = await supabase.from("farmers").insert({
+      id: newFarmer.id,
+      name: newFarmer.name,
+      age: newFarmer.age,
+      country: newFarmer.country,
+      phone: newFarmer.phoneNumber,
+      email: newFarmer.email,
+      password: data.password,
+      language: newFarmer.language,
+      farming_type: newFarmer.farmingType,
+      crops: newFarmer.crops,
+      state: data.farmLocation?.state || null,
+      district: data.farmLocation?.district || null,
+      soil_type: newFarmer.soilType || null,
+      farm_area_acres: newFarmer.farmAreaAcres || null,
+      irrigation_type: newFarmer.irrigationType || null,
+      created_at: newFarmer.createdAt,
+    })
+
+    if (insertError) {
+      console.error("Supabase insert error:", insertError)
+      return NextResponse.json({ error: "Failed to register farmer" }, { status: 500 })
+    }
 
     return NextResponse.json({
       success: true,
@@ -52,4 +80,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-
