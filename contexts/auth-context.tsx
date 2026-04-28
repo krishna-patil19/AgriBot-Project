@@ -31,7 +31,7 @@ interface AuthContextType {
   farmer: FarmerData | null
   language: Language
   setLanguage: (lang: Language) => void
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{success: boolean, error?: string}>
   signup: (data: Omit<FarmerData, "id" | "createdAt"> & { password: string }) => Promise<boolean>
   updateFarmer: (data: Partial<FarmerData>) => Promise<boolean>
   logout: () => void
@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{success: boolean, error?: string}> => {
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -69,7 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
 
       if (!response.ok) {
-        return false
+        const errorData = await response.json().catch(() => ({}));
+        return { success: false, error: errorData.error || "Server error" }
       }
 
       const data = await response.json()
@@ -78,13 +79,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setFarmer(data.farmer)
         localStorage.setItem("farmer-data", JSON.stringify(data.farmer))
         setLanguage(data.farmer.language)
-        return true
+        return { success: true }
       }
 
-      return false
-    } catch (error) {
+      return { success: false, error: data.message || "Invalid response" }
+    } catch (error: any) {
       console.error("Login error:", error)
-      return false
+      return { success: false, error: error.message || "Network error" }
     }
   }
 

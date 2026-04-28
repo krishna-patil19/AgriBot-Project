@@ -16,7 +16,12 @@ export async function POST(request: NextRequest) {
       .eq("email", email)
       .single()
 
-    if (error || !storedFarmer || storedFarmer.password !== password) {
+    if (error) {
+      console.error("Login error from supabase:", error)
+      return NextResponse.json({ error: `Supabase error: ${error.message || JSON.stringify(error)}` }, { status: 500 })
+    }
+
+    if (!storedFarmer || storedFarmer.password !== password) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
     }
 

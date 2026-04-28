@@ -32,15 +32,15 @@ export function FarmerLogin({ language, onLoginSuccess, onSwitchToSignup, onBack
     setErrorMsg("")
 
     try {
-      const success = await login(email, password)
+      const result = await login(email, password)
 
-      if (success) {
+      if (result.success) {
         onLoginSuccess()
       } else {
-        setErrorMsg(t("invalidCredentials"))
+        setErrorMsg(result.error || t("invalidCredentials"))
       }
-    } catch (error) {
-      setErrorMsg(t("loginError"))
+    } catch (error: any) {
+      setErrorMsg(error.message || t("loginError"))
     } finally {
       setIsLoading(false)
     }
