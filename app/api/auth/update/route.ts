@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Update in Supabase
     const { data: updatedRow, error } = await supabase
-      .from("farmers")
+      .from("farmers_signups")
       .update(updatePayload)
       .eq("email", data.email)
       .select("*")

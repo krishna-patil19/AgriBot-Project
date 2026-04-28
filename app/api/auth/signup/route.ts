@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     // Check if email already exists in Supabase
     const { data: existing } = await supabase
-      .from("farmers")
+      .from("farmers_signups")
       .select("email")
       .eq("email", data.email)
       .single()
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert into Supabase farmers table
-    const { error: insertError } = await supabase.from("farmers").insert({
+    const { error: insertError } = await supabase.from("farmers_signups").insert({
       id: newFarmer.id,
       name: newFarmer.name,
       age: newFarmer.age,

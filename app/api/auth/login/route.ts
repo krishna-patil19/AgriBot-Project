@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     // Look up farmer in Supabase
     const { data: storedFarmer, error } = await supabase
-      .from("farmers")
+      .from("farmers_signups")
       .select("*")
       .eq("email", email)
       .single()
