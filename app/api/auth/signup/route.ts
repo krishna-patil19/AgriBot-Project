@@ -14,11 +14,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists in Supabase
-    const { data: existing } = await supabase
+    // Use .maybeSingle() instead of .single() — .single() throws PGRST116 when no row is found,
+    // which can incorrectly trigger the "email already exists" error for new users.
+    const { data: existing, error: checkError } = await supabase
       .from("farmers_signups")
       .select("email")
       .eq("email", data.email)
-      .single()
+      .maybeSingle()
+
+    if (checkError) {
+      console.error("Email check error:", checkError)
+      return NextResponse.json({ error: "Failed to verify email. Please try again." }, { status: 500 })
+    }
 
     if (existing) {
       return NextResponse.json(
