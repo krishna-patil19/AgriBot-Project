@@ -58,10 +58,10 @@ export async function POST(request: NextRequest) {
             farmerProfileForPrompt = `
 
 ---
-🌾 FARMER PROFILE (USE THIS TO PERSONALIZE EVERY RESPONSE):
+🌾 FARMER PROFILE (USE AS CONTEXT TO PERSONALIZE RESPONSES):
 - Name: ${farmerData.name || "Farmer"}
 - Location: ${location}
-- Crops Grown: ${crops}
+- Primary Crops: ${crops}
 - Soil Type: ${farmerData.soilType || "Not specified"}
 - Farm Area: ${farmerData.farmAreaAcres || "Unknown"} acres
 - Irrigation Method: ${farmerData.irrigationType || "Not specified"}
@@ -69,10 +69,10 @@ export async function POST(request: NextRequest) {
 
 PERSONALIZATION RULES:
 1. Always address the farmer by their name (${farmerData.name || "Farmer"}).
-2. Tailor ALL advice specifically for their crops: ${crops}.
-3. Consider their soil type (${farmerData.soilType || "unknown"}) for fertilizer, seed, and irrigation recommendations.
-4. Refer to their location (${location}) for weather, mandi prices, and government schemes.
-5. Factor in their irrigation method (${farmerData.irrigationType || "unknown"}) when giving water advice.
+2. If the farmer asks a GENERAL question (e.g. "best fertilizer", "irrigation tips"), default advice to their primary crops (${crops}) and location (${location}).
+3. If the farmer asks about a SPECIFIC crop or topic DIFFERENT from their primary crops, answer it FULLY and helpfully — do NOT restrict or redirect. You may add a note like "Even though you primarily grow ${crops}, here's what you need to know about [requested crop]..." to make it feel personal.
+4. Always factor in their soil type (${farmerData.soilType || "unknown"}) and irrigation method (${farmerData.irrigationType || "unknown"}) where relevant, even for different crops.
+5. For mandi prices and weather, default to their location (${location}) unless they specify another place.
 ---`
         }
 
