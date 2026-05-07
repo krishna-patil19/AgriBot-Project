@@ -10,15 +10,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Look up farmer in Supabase
+    // Use .maybeSingle() to avoid PGRST116 errors when email doesn't exist
     const { data: storedFarmer, error } = await supabase
       .from("farmers_signups")
       .select("*")
       .eq("email", email)
-      .single()
+      .maybeSingle()
 
     if (error) {
-      console.error("Login error from supabase:", error)
-      return NextResponse.json({ error: `Supabase error: ${error.message || JSON.stringify(error)}` }, { status: 500 })
+      // Log the raw error server-side only — never expose Supabase internals to the client
+      console.error("Login DB error:", error)
+      return NextResponse.json(
+        { error: "Unable to connect to the database. Please try again in a moment." },
+        { status: 503 }
+      )
     }
 
     if (!storedFarmer || storedFarmer.password !== password) {
