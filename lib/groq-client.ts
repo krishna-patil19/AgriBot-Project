@@ -30,14 +30,16 @@ export class GroqClient {
     ragContext: string = "",
     language = "en",
     conversationHistory: { role: string; content: string }[] = [],
-    safetyWarnings: string[] = []
+    safetyWarnings: string[] = [],
+    farmerProfile?: string
   ): Promise<string> {
     const systemPrompt = this.buildSystemPrompt(
       agentId,
       language,
       ragContext,
       safetyWarnings,
-      prompt
+      prompt,
+      farmerProfile
     )
 
     // Build messages array with conversation history
@@ -159,11 +161,18 @@ CRITICAL RULES:
     language: string,
     ragContext: string,
     safetyWarnings: string[],
-    query: string = ""
+    query: string = "",
+    farmerProfile?: string
   ): string {
     const basePrompt = this.getSystemPrompt(agentId, language)
 
     let fullPrompt = basePrompt
+
+    // Inject farmer profile immediately after the base agent prompt
+    // This ensures ALL agents have personalized farmer context
+    if (farmerProfile) {
+      fullPrompt += farmerProfile
+    }
 
     let extraContext = "";
 

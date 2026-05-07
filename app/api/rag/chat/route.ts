@@ -48,8 +48,32 @@ export async function POST(request: NextRequest) {
 
         // Step 4: Build farmer context string
         let farmerContext = ""
+        let farmerProfileForPrompt = ""
         if (farmerData) {
-            farmerContext = `\n\nFarmer Profile:\n- Name: ${farmerData.name || "Unknown"}\n- Location: ${farmerData.farmLocation?.state || "India"}, ${farmerData.farmLocation?.district || ""}\n- Crops: ${farmerData.crops?.join(", ") || "Not specified"}\n- Soil: ${farmerData.soilType || "Not analyzed"}\n- Area: ${farmerData.farmAreaAcres || "Unknown"} acres\n- Irrigation: ${farmerData.irrigationType || "Not specified"}`
+            const crops = farmerData.crops?.join(", ") || "Not specified"
+            const state = farmerData.farmLocation?.state || "India"
+            const district = farmerData.farmLocation?.district || ""
+            const location = district ? `${district}, ${state}` : state
+
+            farmerProfileForPrompt = `
+
+---
+🌾 FARMER PROFILE (USE THIS TO PERSONALIZE EVERY RESPONSE):
+- Name: ${farmerData.name || "Farmer"}
+- Location: ${location}
+- Crops Grown: ${crops}
+- Soil Type: ${farmerData.soilType || "Not specified"}
+- Farm Area: ${farmerData.farmAreaAcres || "Unknown"} acres
+- Irrigation Method: ${farmerData.irrigationType || "Not specified"}
+- Farming Type: ${farmerData.farmingType || "Not specified"}
+
+PERSONALIZATION RULES:
+1. Always address the farmer by their name (${farmerData.name || "Farmer"}).
+2. Tailor ALL advice specifically for their crops: ${crops}.
+3. Consider their soil type (${farmerData.soilType || "unknown"}) for fertilizer, seed, and irrigation recommendations.
+4. Refer to their location (${location}) for weather, mandi prices, and government schemes.
+5. Factor in their irrigation method (${farmerData.irrigationType || "unknown"}) when giving water advice.
+---`
         }
 
         // Step 4b: Check for Live Web Search requirement
@@ -109,7 +133,8 @@ export async function POST(request: NextRequest) {
             fullContext,
             language,
             conversationHistory,
-            allSafetyFlags
+            allSafetyFlags,
+            farmerProfileForPrompt  // injected into system prompt for true personalization
         )
 
         // Step 6: Build response with metadata

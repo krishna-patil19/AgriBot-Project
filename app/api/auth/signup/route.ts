@@ -70,6 +70,9 @@ export async function POST(request: NextRequest) {
       farm_area_acres: newFarmer.farmAreaAcres || null,
       irrigation_type: newFarmer.irrigationType || null,
       created_at: newFarmer.createdAt,
+      // Profile is complete at signup — all 4 steps collect full farm data
+      enhanced_profile_complete: true,
+      ai_personalization_ready: true,
     })
 
     if (insertError) {
