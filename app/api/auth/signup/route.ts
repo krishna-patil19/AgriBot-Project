@@ -34,6 +34,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Calculate IST time for DB display purposes (UTC + 5:30)
+    const now = new Date()
+    const istOffset = 5.5 * 60 * 60 * 1000 // 5.5 hours in milliseconds
+    const istTime = new Date(now.getTime() + istOffset)
+
     // Build new farmer record
     const newFarmer: FarmerData = {
       id: crypto.randomUUID(),
@@ -49,7 +54,7 @@ export async function POST(request: NextRequest) {
       soilType: data.soilType,
       farmAreaAcres: data.farmAreaAcres ? Number.parseFloat(data.farmAreaAcres) : undefined,
       irrigationType: data.irrigationType,
-      createdAt: new Date().toISOString(),
+      createdAt: istTime.toISOString(),
     }
 
     // Insert into Supabase farmers table

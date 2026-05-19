@@ -164,6 +164,7 @@ export const translations = {
     emailPasswordRequired: "Email and Password are required for account creation",
     locationRequired: "Please provide your district and state for accurate weather intelligence",
     updateFailed: "Failed to update profile. Please try again.",
+    profileUpdateSuccess: "Profile updated successfully!",
     signupFailed: "Email already exists or signup failed. Please try a different email.",
     selectSoilPlaceholder: "Select primary soil type",
     namePlaceholder: "e.g. Krishna Patil",
@@ -242,7 +243,7 @@ export const translations = {
     metricPMKISANInfo: "PM-KISAN Info",
 
     // Bottom footer section
-    dataSyncText: "Data synchronized across all 7 specialized agents.",
+    dataSyncText: "Data synchronized across all 8 specialized agents.",
     notAnalyzed: "Not Analyzed",
     acres: "Acres",
     singleCropFarmer: "Single Crop Farmer",
@@ -413,6 +414,7 @@ export const translations = {
     emailPasswordRequired: "खाता निर्माण के लिए ईमेल और पासवर्ड आवश्यक हैं",
     locationRequired: "सटीक मौसम की जानकारी के लिए कृपया अपना जिला और राज्य प्रदान करें",
     updateFailed: "प्रोफ़ाइल अपडेट करने में विफल। कृपया पुन: प्रयास करें।",
+    profileUpdateSuccess: "प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई!",
     signupFailed: "ईमेल पहले से मौजूद है या साइनअप विफल रहा। कृपया एक अलग ईमेल आज़माएं।",
     selectSoilPlaceholder: "प्राथमिक मिट्टी के प्रकार का चयन करें",
     namePlaceholder: "जैसे कृष्णा पाटिल",
@@ -491,7 +493,7 @@ export const translations = {
     metricPMKISANInfo: "PM-KISAN जानकारी",
 
     // Bottom footer section
-    dataSyncText: "डेटा सभी 7 विशेषज्ञ एजेंटों में सिंक किया गया।",
+    dataSyncText: "डेटा सभी 8 विशेषज्ञ एजेंटों में सिंक किया गया।",
     notAnalyzed: "विश्लेषण नहीं हुआ",
     acres: "एकड़",
     singleCropFarmer: "एकल फसल किसान",
@@ -662,6 +664,7 @@ export const translations = {
     emailPasswordRequired: "खाते तयार करण्यासाठी ईमेल आणि पासवर्ड आवश्यक आहे",
     locationRequired: "हवामानाची अचूक माहिती मिळवण्यासाठी कृपया तुमचा जिल्हा आणि राज्य द्या",
     updateFailed: "प्रोफाइल अपडेट करण्यात अयशस्वी. कृपया पुन्हा प्रयत्न करा.",
+    profileUpdateSuccess: "प्रोफाइल यशस्वीरित्या अपडेट झाली!",
     signupFailed: "ईमेल आधीच अस्तित्वात आहे किंवा साइनअप अयशस्वी झाले. कृपया दुसरा ईमेल वापरून पहा.",
     selectSoilPlaceholder: "प्राथमिक मातीचा प्रकार निवडा",
     namePlaceholder: "उदा. कृष्णा पाटील",
@@ -740,7 +743,7 @@ export const translations = {
     metricPMKISANInfo: "PM-KISAN माहिती",
 
     // Bottom footer section
-    dataSyncText: "डेटा सर्व 7 विशेषज्ञ एजंटांमध्ये सिंक केला.",
+    dataSyncText: "डेटा सर्व 8 विशेषज्ञ एजंटांमध्ये सिंक केला.",
     notAnalyzed: "विश्लेषण झालेले नाही",
     acres: "एकर",
     singleCropFarmer: "एकल पीक शेतकरी",

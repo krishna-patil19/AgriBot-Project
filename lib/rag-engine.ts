@@ -1,5 +1,6 @@
 /**
  * FAISS-Inspired In-Memory RAG Engine
+ * (Hot reload triggered for updated domain detection)
  * 
  * Zero-dependency vector store with TF-IDF embeddings and cosine similarity search.
  * Designed for agricultural knowledge retrieval across 8 specialized agents.
@@ -213,6 +214,18 @@ class FAISSInspiredIndex {
   }
 
   /**
+   * Get count of documents per agent domain
+   */
+  getDomainCounts(): Record<string, number> {
+    const counts: Record<string, number> = {}
+    for (const doc of this.documents) {
+      const domain = doc.metadata.agentDomain || "general"
+      counts[domain] = (counts[domain] || 0) + 1
+    }
+    return counts
+  }
+
+  /**
    * Clear all documents
    */
   clear(): void {
@@ -327,6 +340,7 @@ export class RAGEngine {
       "rotation-master": ["rotation", "soil health", "nutrient", "nitrogen", "phosphorus", "legume", "fallow", "intercrop"],
       "irrigation-planner": ["irrigation", "water", "drip", "sprinkler", "canal", "groundwater", "moisture", "scheduling"],
       "training-hub": ["fertilizer", "pesticide", "herbicide", "organic", "dosage", "safety", "application", "training", "ppe"],
+      "maha-yojana": ["scheme", "yojana", "subsidy", "mahadbt", "loan", "grant", "insurance", "vima", "pmkisan", "pm-kisan", "government", "eligibility", "fundkar", "magel tyala"],
       "voice-ai": ["voice", "speech", "language", "translate", "multilingual"]
     }
 
@@ -442,12 +456,10 @@ export class RAGEngine {
    * Get stats about the indexed documents
    */
   getStats(): { totalDocuments: number; domainDistribution: Record<string, number> } {
-    const stats = {
+    return {
       totalDocuments: this.index.size,
-      domainDistribution: {} as Record<string, number>
+      domainDistribution: this.index.getDomainCounts()
     }
-
-    return stats
   }
 
   /**

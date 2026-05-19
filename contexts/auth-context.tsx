@@ -33,7 +33,7 @@ interface AuthContextType {
   setLanguage: (lang: Language) => void
   login: (email: string, password: string) => Promise<{success: boolean, error?: string}>
   signup: (data: Omit<FarmerData, "id" | "createdAt"> & { password: string }) => Promise<boolean>
-  updateFarmer: (data: Partial<FarmerData>) => Promise<boolean>
+  updateFarmer: (data: Partial<FarmerData>) => Promise<{success: boolean, error?: string}>
   logout: () => void
   isAuthenticated: boolean
 }
@@ -125,18 +125,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const updateFarmer = async (data: Partial<FarmerData>): Promise<boolean> => {
+  const updateFarmer = async (data: Partial<FarmerData>): Promise<{success: boolean, error?: string}> => {
     try {
       const response = await fetch("/api/auth/update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: farmer?.email, ...data }),
+        body: JSON.stringify({ id: farmer?.id, email: farmer?.email, ...data }),
       })
 
       if (!response.ok) {
-        return false
+        const errorData = await response.json().catch(() => ({}));
+        return { success: false, error: errorData.error || "Server error" }
       }
 
       const result = await response.json()
@@ -144,13 +145,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (result.success && result.farmer) {
         setFarmer(result.farmer)
         localStorage.setItem("farmer-data", JSON.stringify(result.farmer))
-        return true
+        return { success: true }
       }
 
-      return false
-    } catch (error) {
+      return { success: false, error: result.error || "Failed to update profile" }
+    } catch (error: any) {
       console.error("Update error:", error)
-      return false
+      return { success: false, error: error.message || "Network error" }
     }
   }
 

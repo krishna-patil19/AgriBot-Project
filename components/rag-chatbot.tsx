@@ -945,9 +945,9 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
                 {message.ragSources && message.ragSources.length > 0 && (
                     <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                         <FileText className="w-3 h-3 text-slate-400" />
-                        {message.ragSources.map((src, i) => (
+                        {Array.from(new Set(message.ragSources.map(src => src.source))).map((sourceName, i) => (
                             <span key={i} className="text-[9px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 font-medium whitespace-nowrap">
-                                {translateSourceName(src.source)}
+                                {translateSourceName(sourceName)}
                             </span>
                         ))}
                     </div>

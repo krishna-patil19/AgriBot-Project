@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -42,7 +42,18 @@ function AgribotPlatform() {
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null)
   const [uploadStatus, setUploadStatus] = useState<string | null>(null)
   const [showUpdateProfile, setShowUpdateProfile] = useState(false)
+  const [agentScores, setAgentScores] = useState<Record<string, number>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Fetch real agent knowledge coverage scores
+  useEffect(() => {
+    fetch("/api/agents/scores")
+      .then(res => res.json())
+      .then(data => {
+        if (data.scores) setAgentScores(data.scores)
+      })
+      .catch(() => {}) // Silently fallback to defaults
+  }, [])
 
   const handleKnowledgeBaseUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -69,14 +80,14 @@ function AgribotPlatform() {
   const t = (key: any) => getTranslation(language, key)
 
   const aiAgents: AIAgent[] = [
-    { id: "agri-detect", name: "AgriDetect", description: t("agriDetectDesc"), icon: Scan, success: 94, specialtyKey: "computerVision", metrics: [t("metricRealtimeAnalysis"), t("metricHighAccuracy")], color: "bg-red-500" },
-    { id: "seed-sage", name: "Seed Sage", description: t("seedSageDesc"), icon: Sprout, success: 92, specialtyKey: "agronomyAI", metrics: [t("metricClimateMatched"), t("metricYieldBoost")], color: "bg-green-500" },
-    { id: "market-oracle", name: "Market Oracle", description: t("marketOracleDesc"), icon: TrendingUp, success: 95, specialtyKey: "economicsAI", metrics: [t("metricLivePrices"), t("metricTrendAnalysis")], color: "bg-purple-500" },
-    { id: "weather-intel", name: "Weather Intelligence", description: t("weatherIntelDesc"), icon: CloudRain, success: 89, specialtyKey: "meteorologyAI", metrics: [t("metricHyperlocalData"), t("metricEarlyWarnings")], color: "bg-blue-500" },
-    { id: "rotation-master", name: "Rotation Master", description: t("rotationMasterDesc"), icon: RotateCcw, success: 88, specialtyKey: "soilOptimizer", metrics: [t("metricNutrientBalance"), t("metricPestDisruption")], color: "bg-amber-500" },
-    { id: "irrigation-planner", name: "Irrigation Planner", description: t("irrigationPlannerDesc"), icon: Droplets, success: 91, specialtyKey: "resourceAI", metrics: [t("metricWaterSavings"), t("metricDroughtPrep")], color: "bg-cyan-500" },
-    { id: "training-hub", name: "Training Hub", description: t("trainingHubDesc"), icon: BookOpen, success: 96, specialtyKey: "educationAI", metrics: [t("metricSafetyFirst"), t("metricBestPractices")], color: "bg-teal-500" },
-    { id: "maha-yojana", name: "MahaYojana AI", description: t("mahaYojanaDesc"), icon: Landmark, success: 91, specialtyKey: "schemesAI", metrics: [t("metricMahaDBTAid"), t("metricPMKISANInfo")], color: "bg-yellow-500" },
+    { id: "agri-detect", name: "AgriDetect", description: t("agriDetectDesc"), icon: Scan, success: agentScores["agri-detect"] || 94, specialtyKey: "computerVision", metrics: [t("metricRealtimeAnalysis"), t("metricHighAccuracy")], color: "bg-red-500" },
+    { id: "seed-sage", name: "Seed Sage", description: t("seedSageDesc"), icon: Sprout, success: agentScores["seed-sage"] || 92, specialtyKey: "agronomyAI", metrics: [t("metricClimateMatched"), t("metricYieldBoost")], color: "bg-green-500" },
+    { id: "market-oracle", name: "Market Oracle", description: t("marketOracleDesc"), icon: TrendingUp, success: agentScores["market-oracle"] || 95, specialtyKey: "economicsAI", metrics: [t("metricLivePrices"), t("metricTrendAnalysis")], color: "bg-purple-500" },
+    { id: "weather-intel", name: "Weather Intelligence", description: t("weatherIntelDesc"), icon: CloudRain, success: agentScores["weather-intel"] || 89, specialtyKey: "meteorologyAI", metrics: [t("metricHyperlocalData"), t("metricEarlyWarnings")], color: "bg-blue-500" },
+    { id: "rotation-master", name: "Rotation Master", description: t("rotationMasterDesc"), icon: RotateCcw, success: agentScores["rotation-master"] || 88, specialtyKey: "soilOptimizer", metrics: [t("metricNutrientBalance"), t("metricPestDisruption")], color: "bg-amber-500" },
+    { id: "irrigation-planner", name: "Irrigation Planner", description: t("irrigationPlannerDesc"), icon: Droplets, success: agentScores["irrigation-planner"] || 91, specialtyKey: "resourceAI", metrics: [t("metricWaterSavings"), t("metricDroughtPrep")], color: "bg-cyan-500" },
+    { id: "training-hub", name: "Training Hub", description: t("trainingHubDesc"), icon: BookOpen, success: agentScores["training-hub"] || 96, specialtyKey: "educationAI", metrics: [t("metricSafetyFirst"), t("metricBestPractices")], color: "bg-teal-500" },
+    { id: "maha-yojana", name: "MahaYojana AI", description: t("mahaYojanaDesc"), icon: Landmark, success: agentScores["maha-yojana"] || 91, specialtyKey: "schemesAI", metrics: [t("metricMahaDBTAid"), t("metricPMKISANInfo")], color: "bg-yellow-500" },
   ]
 
   return (
@@ -377,8 +388,19 @@ function AgribotPlatform() {
         </div>
       </div>
       {showUpdateProfile && (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm shadow-2xl overflow-y-auto pt-10 pb-20 px-4">
+        <div
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm shadow-2xl overflow-y-auto pt-10 pb-20 px-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowUpdateProfile(false) }}
+        >
           <div className="max-w-2xl mx-auto relative">
+            {/* Close button — clearly visible */}
+            <button
+              onClick={() => setShowUpdateProfile(false)}
+              className="absolute -right-2 -top-2 z-[70] bg-white text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-full w-10 h-10 flex items-center justify-center shadow-lg border border-gray-200 transition-colors text-lg font-bold"
+              title="Close"
+            >
+              ✕
+            </button>
             <FarmerSignup
               language={language}
               mode="update"
@@ -387,13 +409,6 @@ function AgribotPlatform() {
               onBack={() => setShowUpdateProfile(false)}
               onSignupComplete={() => { }} // Not used in update mode
             />
-            <Button
-              variant="ghost"
-              className="absolute right-0 top-0 text-white hover:bg-white/10"
-              onClick={() => setShowUpdateProfile(false)}
-            >
-              ✕
-            </Button>
           </div>
         </div>
       )}

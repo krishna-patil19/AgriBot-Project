@@ -32,9 +32,10 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
   initialData,
   onUpdateComplete,
 }) => {
-  const { signup, updateFarmer } = useAuth() as any // updateFarmer will be added soon
+  const { signup, updateFarmer } = useAuth() as any
   const [currentStep, setCurrentStep] = useState(1)
   const [error, setError] = useState("")
+  const [successMsg, setSuccessMsg] = useState("")
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     age: initialData?.age?.toString() || "",
@@ -84,9 +85,11 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
   const handleSubmit = async () => {
     setError("")
 
-    if (!formData.email || !formData.password) {
-      setError(t("emailPasswordRequired"))
-      return
+    if (mode !== "update") {
+      if (!formData.email || !formData.password) {
+        setError(t("emailPasswordRequired"))
+        return
+      }
     }
 
     if (!formData.farmLocation.district || !formData.farmLocation.state) {
@@ -100,12 +103,10 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
         : formData.crops
 
     // Normalize data types for the backend
-    const signupData = {
+    const signupData: any = {
       name: formData.name,
       age: formData.age ? Number.parseInt(formData.age) : 0,
       country: formData.country,
-      email: formData.email,
-      password: formData.password,
       language,
       farmingType: formData.farmingType,
       crops: finalCrops,
@@ -115,12 +116,25 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
       irrigationType: formData.irrigationType || "",
     }
 
+    // Only include email for new signups
+    if (mode !== "update") {
+      signupData.email = formData.email
+    }
+
+    // Only include password for new signups
+    if (mode !== "update") {
+      signupData.password = formData.password
+    }
+
     if (mode === "update") {
-      const success = await updateFarmer(signupData)
-      if (success) {
-        onUpdateComplete?.()
+      const result = await updateFarmer(signupData)
+      if (result.success) {
+        setSuccessMsg(t("profileUpdateSuccess"))
+        setTimeout(() => {
+          onUpdateComplete?.()
+        }, 2000)
       } else {
-        setError(t("updateFailed"))
+        setError(result.error || t("updateFailed"))
       }
       return
     }
@@ -137,7 +151,7 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1))
 
   const isStep1Valid = mode === "update"
-    ? formData.name.length > 2 && formData.email.includes("@")
+    ? formData.name.length > 2
     : formData.name.length > 2 && formData.email.includes("@") && formData.password.length >= 6
 
   const renderStep = () => {
@@ -181,29 +195,32 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">{t("emailLabel")} *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder={t("emailPlaceholder")}
-                readOnly={mode === "update"}
-                className={`border-green-200 focus-visible:ring-green-600 ${mode === "update" ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}`}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">{t("passwordLabel")} *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                placeholder={t("passwordPlaceholder")}
-                className="border-green-200 focus-visible:ring-green-600"
-              />
-            </div>
+            {mode !== "update" && (
+              <div className="space-y-2">
+                <Label htmlFor="email">{t("emailLabel")} *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder={t("emailPlaceholder")}
+                  className="border-green-200 focus-visible:ring-green-600"
+                />
+              </div>
+            )}
+            {mode !== "update" && (
+              <div className="space-y-2">
+                <Label htmlFor="password">{t("passwordLabel")} *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  placeholder={t("passwordPlaceholder")}
+                  className="border-green-200 focus-visible:ring-green-600"
+                />
+              </div>
+            )}
           </div>
         )
 
@@ -399,6 +416,15 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
           {error && (
             <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center mt-6 border border-red-100">
               {error}
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="bg-green-50 text-green-700 p-4 rounded-md text-sm text-center mt-6 border border-green-200 flex items-center justify-center gap-2 animate-in fade-in">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="font-semibold">{successMsg}</span>
             </div>
           )}
 

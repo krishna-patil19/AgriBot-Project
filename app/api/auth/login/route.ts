@@ -30,6 +30,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
     }
 
+    // Calculate IST time for DB display purposes (UTC + 5:30)
+    const now = new Date()
+    const istOffset = 5.5 * 60 * 60 * 1000 // 5.5 hours in milliseconds
+    const istTime = new Date(now.getTime() + istOffset)
+
     // Log this login event → login_logs table
     await supabase.from("login_logs").insert({
       farmer_id: storedFarmer.id,
@@ -37,7 +42,7 @@ export async function POST(request: NextRequest) {
       email: storedFarmer.email,
       state: storedFarmer.state || null,
       district: storedFarmer.district || null,
-      logged_in_at: new Date().toISOString(),
+      logged_in_at: istTime.toISOString(),
     })
 
     // Build response (exclude password)

@@ -5,66 +5,127 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
-    if (!data.email) {
-      return NextResponse.json({ error: "Email is required to identify user" }, { status: 400 })
+    if (!data.id && !data.email) {
+      return NextResponse.json({ error: "No identifier provided" }, { status: 400 })
     }
 
-    // Build the update payload (only defined fields)
-    const updatePayload: Record<string, unknown> = {}
-    if (data.name !== undefined) updatePayload.name = data.name
-    if (data.age !== undefined) updatePayload.age = Number(data.age)
-    if (data.language !== undefined) updatePayload.language = data.language
-    if (data.phoneNumber !== undefined) updatePayload.phone = data.phoneNumber
-    if (data.country !== undefined) updatePayload.country = data.country
-    if (data.farmingType !== undefined) updatePayload.farming_type = data.farmingType
-    if (data.crops !== undefined) updatePayload.crops = data.crops
-    if (data.farmLocation?.state !== undefined) updatePayload.state = data.farmLocation.state
-    if (data.farmLocation?.district !== undefined) updatePayload.district = data.farmLocation.district
-    if (data.soilType !== undefined) updatePayload.soil_type = data.soilType
-    if (data.farmAreaAcres !== undefined) updatePayload.farm_area_acres = Number(data.farmAreaAcres)
-    if (data.irrigationType !== undefined) updatePayload.irrigation_type = data.irrigationType
-    if (data.enhancedProfileComplete !== undefined) updatePayload.enhanced_profile_complete = data.enhancedProfileComplete
-    if (data.aiPersonalizationReady !== undefined) updatePayload.ai_personalization_ready = data.aiPersonalizationReady
+    // Build the row data for insert/update
+    const rowData: Record<string, unknown> = {}
+    if (data.name !== undefined) rowData.name = data.name
+    if (data.age !== undefined) rowData.age = Number(data.age)
+    if (data.language !== undefined) rowData.language = data.language
+    if (data.phoneNumber !== undefined) rowData.phone = data.phoneNumber
+    if (data.country !== undefined) rowData.country = data.country
+    if (data.farmingType !== undefined) rowData.farming_type = data.farmingType
+    if (data.crops !== undefined) rowData.crops = data.crops
+    if (data.farmLocation?.state !== undefined) rowData.state = data.farmLocation.state
+    if (data.farmLocation?.district !== undefined) rowData.district = data.farmLocation.district
+    if (data.soilType !== undefined) rowData.soil_type = data.soilType
+    if (data.farmAreaAcres !== undefined) rowData.farm_area_acres = Number(data.farmAreaAcres)
+    if (data.irrigationType !== undefined) rowData.irrigation_type = data.irrigationType
+    if (data.enhancedProfileComplete !== undefined) rowData.enhanced_profile_complete = data.enhancedProfileComplete
+    if (data.aiPersonalizationReady !== undefined) rowData.ai_personalization_ready = data.aiPersonalizationReady
 
-    // Update in Supabase
-    const { data: updatedRow, error } = await supabase
-      .from("farmers_signups")
-      .update(updatePayload)
-      .eq("email", data.email)
-      .select("*")
-      .single()
+    // Try to find the farmer by id or email
+    let existingFarmer: any = null
 
-    if (error || !updatedRow) {
-      console.error("Supabase update error:", error)
-      return NextResponse.json({ error: "Failed to update farmer profile" }, { status: 500 })
+    if (data.id) {
+      const { data: byId } = await supabase
+        .from("farmers_signups")
+        .select("*")
+        .eq("id", data.id)
+        .maybeSingle()
+      existingFarmer = byId
     }
 
-    // Build farmer response
+    if (!existingFarmer && data.email) {
+      const { data: byEmail } = await supabase
+        .from("farmers_signups")
+        .select("*")
+        .eq("email", data.email)
+        .maybeSingle()
+      existingFarmer = byEmail
+    }
+
+    let finalRow: any
+
+    if (existingFarmer) {
+      // UPDATE existing farmer
+      const { error: updateError } = await supabase
+        .from("farmers_signups")
+        .update(rowData)
+        .eq("id", existingFarmer.id)
+
+      if (updateError) {
+        console.error("Update error:", updateError.message)
+        return NextResponse.json({ error: `Update failed: ${updateError.message}` }, { status: 500 })
+      }
+
+      // Fetch updated row
+      const { data: updated } = await supabase
+        .from("farmers_signups")
+        .select("*")
+        .eq("id", existingFarmer.id)
+        .maybeSingle()
+
+      finalRow = updated || existingFarmer
+    } else {
+      // UPSERT: farmer exists in localStorage but not in DB — create them
+      const newId = data.id || crypto.randomUUID()
+      const insertData = {
+        id: newId,
+        email: data.email || `farmer_${newId.substring(0, 8)}@agribot.local`,
+        password: "agribot_default",
+        created_at: new Date().toISOString(),
+        enhanced_profile_complete: true,
+        ai_personalization_ready: true,
+        ...rowData,
+      }
+
+      const { error: insertError } = await supabase
+        .from("farmers_signups")
+        .insert(insertData)
+
+      if (insertError) {
+        console.error("Insert error:", insertError.message)
+        return NextResponse.json({ error: `Save failed: ${insertError.message}` }, { status: 500 })
+      }
+
+      const { data: inserted } = await supabase
+        .from("farmers_signups")
+        .select("*")
+        .eq("id", newId)
+        .maybeSingle()
+
+      finalRow = inserted || { id: newId, ...insertData }
+    }
+
+    // Build response
     const farmerData = {
-      id: updatedRow.id,
-      name: updatedRow.name,
-      age: updatedRow.age,
-      country: updatedRow.country,
-      phoneNumber: updatedRow.phone,
-      email: updatedRow.email,
-      language: updatedRow.language,
-      farmingType: updatedRow.farming_type,
-      crops: updatedRow.crops || [],
-      farmLocation: updatedRow.state
-        ? { state: updatedRow.state, district: updatedRow.district }
+      id: finalRow.id,
+      name: finalRow.name,
+      age: finalRow.age,
+      country: finalRow.country,
+      phoneNumber: finalRow.phone,
+      email: finalRow.email,
+      language: finalRow.language,
+      farmingType: finalRow.farming_type,
+      crops: finalRow.crops || [],
+      farmLocation: finalRow.state
+        ? { state: finalRow.state, district: finalRow.district }
         : undefined,
-      soilType: updatedRow.soil_type,
-      farmAreaAcres: updatedRow.farm_area_acres,
-      irrigationType: updatedRow.irrigation_type,
-      createdAt: updatedRow.created_at,
-      enhancedProfileComplete: updatedRow.enhanced_profile_complete,
-      aiPersonalizationReady: updatedRow.ai_personalization_ready,
+      soilType: finalRow.soil_type,
+      farmAreaAcres: finalRow.farm_area_acres,
+      irrigationType: finalRow.irrigation_type,
+      createdAt: finalRow.created_at,
+      enhancedProfileComplete: finalRow.enhanced_profile_complete,
+      aiPersonalizationReady: finalRow.ai_personalization_ready,
     }
 
     return NextResponse.json({
       success: true,
       farmer: farmerData,
-      message: "Farmer profile updated successfully",
+      message: "Profile updated successfully",
     })
   } catch (error) {
     console.error("Update error:", error)
