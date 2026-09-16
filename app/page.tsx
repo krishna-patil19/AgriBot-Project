@@ -389,7 +389,7 @@ function AgribotPlatform() {
       </div>
       {showUpdateProfile && (
         <div
-          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm shadow-2xl overflow-y-auto pt-10 pb-20 px-4"
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm shadow-2xl overflow-y-auto pt-10 pb-20 px-4 [&_[data-radix-popper-content-wrapper]]:!z-[70]"
           onClick={(e) => { if (e.target === e.currentTarget) setShowUpdateProfile(false) }}
         >
           <div className="max-w-2xl mx-auto relative">

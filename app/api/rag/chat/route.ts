@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
         let farmerContext = ""
         let farmerProfileForPrompt = ""
         if (farmerData) {
+            const firstName = farmerData.name ? farmerData.name.split(' ')[0] : "Farmer"
             const crops = farmerData.crops?.join(", ") || "Not specified"
             const state = farmerData.farmLocation?.state || "India"
             const district = farmerData.farmLocation?.district || ""
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
 ---
 🌾 FARMER PROFILE (USE AS CONTEXT TO PERSONALIZE RESPONSES):
-- Name: ${farmerData.name || "Farmer"}
+- Name: ${firstName}
 - Location: ${location}
 - Primary Crops: ${crops}
 - Soil Type: ${farmerData.soilType || "Not specified"}
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 - Farming Type: ${farmerData.farmingType || "Not specified"}
 
 PERSONALIZATION RULES:
-1. Always address the farmer by their name (${farmerData.name || "Farmer"}).
+1. Always address the farmer by their first name (${firstName}).
 2. If the farmer asks a GENERAL question (e.g. "best fertilizer", "irrigation tips"), default advice to their primary crops (${crops}) and location (${location}).
 3. If the farmer asks about a SPECIFIC crop or topic DIFFERENT from their primary crops, answer it FULLY and helpfully — do NOT restrict or redirect. You may add a note like "Even though you primarily grow ${crops}, here's what you need to know about [requested crop]..." to make it feel personal.
 4. Always factor in their soil type (${farmerData.soilType || "unknown"}) and irrigation method (${farmerData.irrigationType || "unknown"}) where relevant, even for different crops.
@@ -123,9 +124,6 @@ PERSONALIZATION RULES:
         }
 
         // Step 5: High-Quality Response Generation
-        // We now generate the response directly in the user's requested language.
-        // Groq's Llama 3.3 has high native proficiency in Hindi and Marathi, which
-        // provides much better accuracy and cultural nuance than double translation.
         const fullContext = ragContext + farmerContext
         let response = await groqClient.generateRAGResponse(
             agentId,
@@ -134,8 +132,24 @@ PERSONALIZATION RULES:
             language,
             conversationHistory,
             allSafetyFlags,
-            farmerProfileForPrompt  // injected into system prompt for true personalization
+            farmerProfileForPrompt
         )
+
+        // Step 5b: High-Quality Regional Translation via Sarvam AI Mayura v1
+        // Sarvam Mayura v1 provides state-of-the-art neural translation specifically built for Marathi (mr-IN) and Hindi (hi-IN)
+        if ((language === "mr" || language === "hi") && response) {
+            try {
+                const { sarvamClient } = await import("@/lib/sarvam-client")
+                console.log(`[RAG Chat] Translating response to ${language} using Sarvam AI Mayura v1...`)
+                const sarvamTranslation = await sarvamClient.translate(response, "en", language)
+                if (sarvamTranslation && sarvamTranslation.trim().length > 0) {
+                    response = sarvamTranslation
+                    console.log(`[RAG Chat] Sarvam Mayura v1 translation successful! (${response.length} chars)`)
+                }
+            } catch (err) {
+                console.warn("[RAG Chat] Sarvam Mayura translation fallback to LLM native response:", err)
+            }
+        }
 
         // Step 6: Build response with metadata
         const ragSources = ragResults

@@ -934,7 +934,7 @@ function MessageBubble({ message, getAgent }: { message: ChatMessage; getAgent: 
 
                 {/* Message body with Markdown */}
                 <div className={`${agent.bgLight} dark:bg-slate-900 border-2 ${agent.borderColor} dark:border-slate-700 rounded-3xl rounded-tl-sm px-6 py-4 shadow-sm`}>
-                    <div className="prose prose-sm dark:prose-invert max-w-none prose-emerald prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white prose-a:text-emerald-600 prose-strong:text-slate-900 dark:prose-strong:text-white [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-emerald prose-p:leading-relaxed prose-p:mb-4 prose-li:mb-2 prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white prose-a:text-emerald-600 prose-strong:text-slate-900 dark:prose-strong:text-white [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {message.content}
                         </ReactMarkdown>

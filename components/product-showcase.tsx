@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Shield, Bug, Zap, Star, TrendingUp, Camera } from "lucide-react"
-import { DiseaseDetective } from "@/components/disease-detective"
 
 interface ProductShowcaseProps {
   language: string
@@ -94,7 +93,20 @@ function ProductShowcase({ language }: ProductShowcaseProps) {
         </TabsList>
 
         <TabsContent value="disease-detection">
-          <DiseaseDetective />
+          <Card className="border-2 border-dashed border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20 p-8 text-center rounded-xl">
+            <div className="flex flex-col items-center max-w-md mx-auto space-y-4">
+              <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-full text-green-600 dark:text-green-400">
+                <Camera className="h-10 w-10" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">AgriDetect AI Disease Scanner</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Upload a photo of your crop or leaves to get instant AI diagnostic feedback, disease classification, and recommended treatment options.
+              </p>
+              <Button className="bg-green-600 hover:bg-green-700 text-white gap-2 mt-2">
+                <Camera className="h-4 w-4" /> Start AI Camera Scan
+              </Button>
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="products">

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { FarmerData } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
+import { fallbackFarmers, isSupabaseConnectionError } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,21 +14,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if email already exists in Supabase
-    // Use .maybeSingle() instead of .single() — .single() throws PGRST116 when no row is found,
-    // which can incorrectly trigger the "email already exists" error for new users.
-    const { data: existing, error: checkError } = await supabase
-      .from("farmers_signups")
-      .select("email")
-      .eq("email", data.email)
-      .maybeSingle()
+    const emailLower = data.email.toLowerCase()
+    let isDbOffline = false
 
-    if (checkError) {
-      console.error("Email check error:", checkError)
-      return NextResponse.json({ error: "Failed to verify email. Please try again." }, { status: 500 })
+    try {
+      // Check if email already exists in Supabase
+      const { data: existing, error: checkError } = await supabase
+        .from("farmers_signups")
+        .select("email")
+        .eq("email", data.email)
+        .maybeSingle()
+
+      if (checkError) {
+        if (isSupabaseConnectionError(checkError)) {
+          console.warn("[Supabase Warning] Database unreachable on signup check. Using local fallback.")
+          isDbOffline = true
+        } else {
+          console.error("Email check error:", checkError)
+          return NextResponse.json({ error: "Failed to verify email. Please try again." }, { status: 500 })
+        }
+      } else if (existing) {
+        return NextResponse.json(
+          { error: "Email already exists. Please use a different email or sign in." },
+          { status: 409 },
+        )
+      }
+    } catch (err) {
+      console.warn("[Supabase Warning] Database fetch exception during signup. Using local fallback.")
+      isDbOffline = true
     }
 
-    if (existing) {
+    if (fallbackFarmers.has(emailLower)) {
       return NextResponse.json(
         { error: "Email already exists. Please use a different email or sign in." },
         { status: 409 },
@@ -57,32 +74,59 @@ export async function POST(request: NextRequest) {
       createdAt: istTime.toISOString(),
     }
 
-    // Insert into Supabase farmers table
-    const { error: insertError } = await supabase.from("farmers_signups").insert({
+    // Always keep fallback in-memory store updated
+    fallbackFarmers.set(emailLower, {
       id: newFarmer.id,
       name: newFarmer.name,
       age: newFarmer.age,
       country: newFarmer.country,
       phone: newFarmer.phoneNumber,
-      email: newFarmer.email,
+      email: data.email,
       password: data.password,
       language: newFarmer.language,
       farming_type: newFarmer.farmingType,
       crops: newFarmer.crops,
-      state: data.farmLocation?.state || null,
-      district: data.farmLocation?.district || null,
-      soil_type: newFarmer.soilType || null,
-      farm_area_acres: newFarmer.farmAreaAcres || null,
-      irrigation_type: newFarmer.irrigationType || null,
+      state: data.farmLocation?.state,
+      district: data.farmLocation?.district,
+      soil_type: newFarmer.soilType,
+      farm_area_acres: newFarmer.farmAreaAcres,
+      irrigation_type: newFarmer.irrigationType,
       created_at: newFarmer.createdAt,
-      // Profile is complete at signup — all 4 steps collect full farm data
       enhanced_profile_complete: true,
       ai_personalization_ready: true,
     })
 
-    if (insertError) {
-      console.error("Supabase insert error:", insertError)
-      return NextResponse.json({ error: "Failed to register farmer" }, { status: 500 })
+    if (!isDbOffline) {
+      // Insert into Supabase farmers table
+      const { error: insertError } = await supabase.from("farmers_signups").insert({
+        id: newFarmer.id,
+        name: newFarmer.name,
+        age: newFarmer.age,
+        country: newFarmer.country,
+        phone: newFarmer.phoneNumber,
+        email: newFarmer.email,
+        password: data.password,
+        language: newFarmer.language,
+        farming_type: newFarmer.farmingType,
+        crops: newFarmer.crops,
+        state: data.farmLocation?.state || null,
+        district: data.farmLocation?.district || null,
+        soil_type: newFarmer.soilType || null,
+        farm_area_acres: newFarmer.farmAreaAcres || null,
+        irrigation_type: newFarmer.irrigationType || null,
+        created_at: newFarmer.createdAt,
+        enhanced_profile_complete: true,
+        ai_personalization_ready: true,
+      })
+
+      if (insertError) {
+        if (isSupabaseConnectionError(insertError)) {
+          console.warn("[Supabase Warning] Insert failed due to connection error. Saved to local store.")
+        } else {
+          console.error("Supabase insert error:", insertError)
+          return NextResponse.json({ error: "Failed to register farmer" }, { status: 500 })
+        }
+      }
     }
 
     return NextResponse.json({
@@ -95,3 +139,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+

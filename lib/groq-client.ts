@@ -1,15 +1,15 @@
-const PRIMARY_MODEL = "llama-3.3-70b-versatile"
-const FALLBACK_MODEL = "llama-3.1-8b-instant"
+const PRIMARY_MODEL = "openai/gpt-oss-120b"
+const FALLBACK_MODEL = "qwen/qwen3.8-27b"
 
 export class GroqClient {
-  private apiKey: string
   private baseUrl = "https://api.groq.com/openai/v1"
 
-  constructor() {
-    // Let Next.js handle env variables, but ensure no fallback to an invalid key
-    this.apiKey = process.env.GROQ_API_KEY || ""
+  private get key(): string {
+    return process.env.GROQ_API_KEY || ""
+  }
 
-    if (!this.apiKey && typeof window === "undefined") {
+  constructor() {
+    if (!this.key && typeof window === "undefined") {
       console.warn("[RAG] Warning: GROQ_API_KEY is not defined in environment variables.")
     }
   }
@@ -52,7 +52,8 @@ export class GroqClient {
     // Try primary model first, then fallback
     for (const model of [PRIMARY_MODEL, FALLBACK_MODEL]) {
       try {
-        if (!this.apiKey) {
+        const apiKey = this.key
+        if (!apiKey) {
           console.error("[RAG] Cannot generate response: Missing GROQ_API_KEY")
           return this.getFallbackResponse(agentId, language)
         }
@@ -62,7 +63,7 @@ export class GroqClient {
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -108,7 +109,7 @@ export class GroqClient {
    */
   async extractCommodityAndLocation(message: string): Promise<{ commodity: string; state: string } | null> {
     try {
-      if (!this.apiKey) return null;
+      if (!this.key) return null;
 
       const systemPrompt = `You are an expert entity extraction AI for Indian agriculture.
 Your task is to extract the agricultural 'commodity' and the Indian 'state' from the user's message.
@@ -122,7 +123,7 @@ CRITICAL RULES:
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${this.key}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

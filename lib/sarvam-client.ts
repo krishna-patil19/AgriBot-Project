@@ -5,28 +5,40 @@
  */
 
 export class SarvamClient {
-    private apiKey: string
     private baseUrl = "https://api.sarvam.ai"
 
+    private get key(): string {
+        return process.env.SARVAM_API_KEY || ""
+    }
+
     constructor() {
-        this.apiKey = process.env.SARVAM_API_KEY || ""
+        if (!this.key && typeof window === "undefined") {
+            console.warn("[Sarvam] Warning: SARVAM_API_KEY is not defined in environment variables.")
+        }
+    }
+
+    private normalizeLangCode(code: string): string {
+        if (code === "en") return "en-IN"
+        if (code === "mr") return "mr-IN"
+        if (code === "hi") return "hi-IN"
+        return code
     }
 
     /**
-     * Speech-to-Text using Saaras v3
+     * Speech-to-Text using Saaras v1
      */
     async speechToText(audioFile: File, language: string = "hi"): Promise<string> {
-        if (!this.apiKey) throw new Error("SARVAM_API_KEY is missing")
+        const apiKey = this.key
+        if (!apiKey) throw new Error("SARVAM_API_KEY is missing")
 
         console.log(`[Sarvam STT] Starting transcription for ${language}, file: ${audioFile.name}, size: ${audioFile.size}`)
 
         const formData = new FormData()
         formData.append("file", audioFile)
-        formData.append("model", "saaras:v1") // Using v1 for better stability with various webm/wav types
+        formData.append("model", "saaras:v1")
         formData.append("timestamp_format", "none")
 
-        // Map language codes correctly for Sarvam STT
-        const langCode = language === "mr" ? "mr-IN" : language === "hi" ? "hi-IN" : "en-IN"
+        const langCode = this.normalizeLangCode(language)
         formData.append("language_code", langCode)
 
         try {
@@ -34,7 +46,7 @@ export class SarvamClient {
             const response = await fetch(`${this.baseUrl}/speech-to-text`, {
                 method: "POST",
                 headers: {
-                    "api-subscription-key": this.apiKey,
+                    "api-subscription-key": apiKey,
                 },
                 body: formData,
             })
@@ -61,22 +73,26 @@ export class SarvamClient {
      * Mayura has a 1000 character limit per request, so we chunk long texts.
      */
     async translate(text: string, source: string, target: string): Promise<string> {
-        if (!this.apiKey) throw new Error("SARVAM_API_KEY is missing")
+        const apiKey = this.key
+        if (!apiKey) throw new Error("SARVAM_API_KEY is missing")
         if (!text || text.trim().length === 0) return ""
 
-        console.log(`[Sarvam Translate] Request: ${source} -> ${target}, length: ${text.length} chars`)
+        const srcCode = this.normalizeLangCode(source)
+        const tgtCode = this.normalizeLangCode(target)
 
-        // Mayura v1 has 1000 char limit — chunk if needed
+        console.log(`[Sarvam Translate] Request: ${srcCode} -> ${tgtCode}, length: ${text.length} chars`)
+
         const MAX_CHARS = 900
         if (text.length > MAX_CHARS) {
             console.log(`[Sarvam Translate] Text exceeds ${MAX_CHARS} chars, chunking...`)
-            return this.translateChunked(text, source, target, MAX_CHARS)
+            return this.translateChunked(text, srcCode, tgtCode, MAX_CHARS)
         }
 
-        return this.translateSingle(text, source, target)
+        return this.translateSingle(text, srcCode, tgtCode)
     }
 
     private async translateSingle(text: string, source: string, target: string): Promise<string> {
+        const apiKey = this.key
         try {
             const body = {
                 input: text,
@@ -93,7 +109,7 @@ export class SarvamClient {
             const response = await fetch(`${this.baseUrl}/translate`, {
                 method: "POST",
                 headers: {
-                    "api-subscription-key": this.apiKey,
+                    "api-subscription-key": apiKey,
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(body),
@@ -169,7 +185,8 @@ export class SarvamClient {
      * Text-to-Speech using Bulbul v2
      */
     async textToSpeech(text: string, language: string = "hi"): Promise<string> {
-        if (!this.apiKey) throw new Error("SARVAM_API_KEY is missing")
+        const apiKey = this.key
+        if (!apiKey) throw new Error("SARVAM_API_KEY is missing")
 
         // Convert structured AI response into natural spoken text
         const cleanText = this.prepareTextForSpeech(text)
@@ -177,21 +194,23 @@ export class SarvamClient {
         // TTS has limits — truncate to ~500 chars for voice
         const ttsText = cleanText.length > 500 ? cleanText.substring(0, 497) + "." : cleanText
 
-        // Map language codes correctly — Marathi gets its own code
-        const langCode = language === "mr" ? "mr-IN" : language === "hi" ? "hi-IN" : "en-IN"
+        // Map language codes correctly — Marathi gets native speaker 'rupali'
+        const langCode = this.normalizeLangCode(language)
+        const speaker = language === "mr" ? "rupali" : language === "hi" ? "ritu" : "anushka"
+        const model = "bulbul:v3"
 
         try {
             const response = await fetch(`${this.baseUrl}/text-to-speech`, {
                 method: "POST",
                 headers: {
-                    "api-subscription-key": this.apiKey,
+                    "api-subscription-key": apiKey,
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     inputs: [ttsText],
                     target_language_code: langCode,
-                    model: "bulbul:v2",
-                    speaker: "anushka",
+                    model: model,
+                    speaker: speaker,
                     pitch: 0,
                     pace: 0.9,
                     loudness: 1.2,

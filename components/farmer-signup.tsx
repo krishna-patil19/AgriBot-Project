@@ -76,10 +76,29 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
   }
 
   const handleCropToggle = (crop: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      crops: prev.crops.includes(crop) ? prev.crops.filter((c) => c !== crop) : [...prev.crops, crop],
-    }))
+    setFormData((prev) => {
+      const isSelected = prev.crops.includes(crop)
+
+      if (prev.farmingType === "single") {
+        // In single mode: toggle off if already selected, otherwise replace with this crop
+        return {
+          ...prev,
+          crops: isSelected ? [] : [crop],
+        }
+      }
+
+      // In multiple mode: normal toggle behavior
+      const newCrops = isSelected
+        ? prev.crops.filter((c) => c !== crop)
+        : [...prev.crops, crop]
+
+      // If they deselect down to 1 or 0, auto-switch back to single
+      return {
+        ...prev,
+        crops: newCrops,
+        farmingType: newCrops.length > 1 ? "multiple" : "single",
+      }
+    })
   }
 
   const handleSubmit = async () => {
@@ -235,7 +254,13 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
               <Label>{t("farmingType")}</Label>
               <Select
                 value={formData.farmingType}
-                onValueChange={(value: "single" | "multiple") => handleInputChange("farmingType", value)}
+                onValueChange={(value: "single" | "multiple") => {
+                  handleInputChange("farmingType", value)
+                  // When switching to single, keep only the first selected crop
+                  if (value === "single" && formData.crops.length > 1) {
+                    setFormData((prev) => ({ ...prev, crops: prev.crops.slice(0, 1) }))
+                  }
+                }}
               >
                 <SelectTrigger className="border-green-200 focus:ring-green-600">
                   <SelectValue />

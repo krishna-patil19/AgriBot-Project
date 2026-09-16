@@ -80,6 +80,23 @@ export function FarmerLogin({ language, onLoginSuccess, onSwitchToSignup, onBack
           <p className="text-gray-600 mt-2">{t("loginSubtitle")}</p>
         </div>
 
+        <div className="mb-6 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs flex items-center justify-between shadow-sm">
+          <div>
+            <span className="font-semibold text-amber-900">💡 Quick Dev Demo:</span>
+            <span className="ml-1 text-amber-700">demo@agribot.com</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail("demo@agribot.com")
+              setPassword("password123")
+            }}
+            className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-md font-medium transition-colors shadow-sm"
+          >
+            Auto Fill
+          </button>
+        </div>
+
         {errorMsg && (
           <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 border border-red-200">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
+import { fallbackFarmers, isSupabaseConnectionError } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,78 +27,97 @@ export async function POST(request: NextRequest) {
     if (data.enhancedProfileComplete !== undefined) rowData.enhanced_profile_complete = data.enhancedProfileComplete
     if (data.aiPersonalizationReady !== undefined) rowData.ai_personalization_ready = data.aiPersonalizationReady
 
-    // Try to find the farmer by id or email
+    // Try to find the farmer by id or email in Supabase
     let existingFarmer: any = null
+    let isDbOffline = false
 
-    if (data.id) {
-      const { data: byId } = await supabase
-        .from("farmers_signups")
-        .select("*")
-        .eq("id", data.id)
-        .maybeSingle()
-      existingFarmer = byId
-    }
+    try {
+      if (data.id) {
+        const { data: byId, error: errId } = await supabase
+          .from("farmers_signups")
+          .select("*")
+          .eq("id", data.id)
+          .maybeSingle()
+        if (errId && isSupabaseConnectionError(errId)) isDbOffline = true
+        else existingFarmer = byId
+      }
 
-    if (!existingFarmer && data.email) {
-      const { data: byEmail } = await supabase
-        .from("farmers_signups")
-        .select("*")
-        .eq("email", data.email)
-        .maybeSingle()
-      existingFarmer = byEmail
+      if (!existingFarmer && data.email && !isDbOffline) {
+        const { data: byEmail, error: errEmail } = await supabase
+          .from("farmers_signups")
+          .select("*")
+          .eq("email", data.email)
+          .maybeSingle()
+        if (errEmail && isSupabaseConnectionError(errEmail)) isDbOffline = true
+        else existingFarmer = byEmail
+      }
+    } catch (err) {
+      isDbOffline = true
     }
 
     let finalRow: any
 
-    if (existingFarmer) {
-      // UPDATE existing farmer
+    if (!isDbOffline && existingFarmer) {
+      // UPDATE existing farmer in Supabase
       const { error: updateError } = await supabase
         .from("farmers_signups")
         .update(rowData)
         .eq("id", existingFarmer.id)
 
       if (updateError) {
-        console.error("Update error:", updateError.message)
-        return NextResponse.json({ error: `Update failed: ${updateError.message}` }, { status: 500 })
+        if (isSupabaseConnectionError(updateError)) {
+          isDbOffline = true
+        } else {
+          console.error("Update error:", updateError.message)
+          return NextResponse.json({ error: `Update failed: ${updateError.message}` }, { status: 500 })
+        }
+      } else {
+        const { data: updated } = await supabase
+          .from("farmers_signups")
+          .select("*")
+          .eq("id", existingFarmer.id)
+          .maybeSingle()
+        finalRow = updated || existingFarmer
+      }
+    }
+
+    if (isDbOffline || !existingFarmer) {
+      // Fallback: update or create in fallbackFarmers map
+      const lookupEmail = data.email?.toLowerCase()
+      let local = lookupEmail ? fallbackFarmers.get(lookupEmail) : null
+
+      if (!local && data.id) {
+        for (const f of fallbackFarmers.values()) {
+          if (f.id === data.id) {
+            local = f
+            break
+          }
+        }
       }
 
-      // Fetch updated row
-      const { data: updated } = await supabase
-        .from("farmers_signups")
-        .select("*")
-        .eq("id", existingFarmer.id)
-        .maybeSingle()
-
-      finalRow = updated || existingFarmer
-    } else {
-      // UPSERT: farmer exists in localStorage but not in DB — create them
-      const newId = data.id || crypto.randomUUID()
-      const insertData = {
-        id: newId,
-        email: data.email || `farmer_${newId.substring(0, 8)}@agribot.local`,
-        password: "agribot_default",
-        created_at: new Date().toISOString(),
-        enhanced_profile_complete: true,
-        ai_personalization_ready: true,
-        ...rowData,
+      const updatedLocal = {
+        id: local?.id || data.id || crypto.randomUUID(),
+        name: data.name ?? local?.name ?? "Farmer",
+        age: data.age !== undefined ? Number(data.age) : local?.age ?? 30,
+        country: data.country ?? local?.country ?? "India",
+        phone: data.phoneNumber ?? local?.phone,
+        email: data.email ?? local?.email ?? "farmer@agribot.local",
+        password: local?.password ?? "agribot_default",
+        language: data.language ?? local?.language ?? "en",
+        farming_type: data.farmingType ?? local?.farming_type ?? "single",
+        crops: data.crops ?? local?.crops ?? [],
+        state: data.farmLocation?.state ?? local?.state,
+        district: data.farmLocation?.district ?? local?.district,
+        soil_type: data.soilType ?? local?.soil_type,
+        farm_area_acres: data.farmAreaAcres !== undefined ? Number(data.farmAreaAcres) : local?.farm_area_acres,
+        irrigation_type: data.irrigationType ?? local?.irrigation_type,
+        created_at: local?.created_at ?? new Date().toISOString(),
+        enhanced_profile_complete: data.enhancedProfileComplete ?? local?.enhanced_profile_complete ?? true,
+        ai_personalization_ready: data.aiPersonalizationReady ?? local?.ai_personalization_ready ?? true,
       }
 
-      const { error: insertError } = await supabase
-        .from("farmers_signups")
-        .insert(insertData)
-
-      if (insertError) {
-        console.error("Insert error:", insertError.message)
-        return NextResponse.json({ error: `Save failed: ${insertError.message}` }, { status: 500 })
-      }
-
-      const { data: inserted } = await supabase
-        .from("farmers_signups")
-        .select("*")
-        .eq("id", newId)
-        .maybeSingle()
-
-      finalRow = inserted || { id: newId, ...insertData }
+      fallbackFarmers.set(updatedLocal.email.toLowerCase(), updatedLocal)
+      finalRow = updatedLocal
     }
 
     // Build response
@@ -125,10 +145,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       farmer: farmerData,
-      message: "Profile updated successfully",
+      message: "Profile updated successfully" + (isDbOffline ? " (offline fallback)" : ""),
     })
   } catch (error) {
     console.error("Update error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
