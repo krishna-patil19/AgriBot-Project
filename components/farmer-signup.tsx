@@ -422,7 +422,7 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
             </button>
           )}
           <CardTitle className="text-2xl font-bold text-green-800 text-center">
-            {mode === "update" ? "Update Farm Profile" : "Create AGRIBOT Account"}
+            {mode === "update" ? t("updateFarmProfile") : t("createAgribotAccount")}
           </CardTitle>
           <div className="mt-6">
             <Progress value={(currentStep / 4) * 100} className="h-2 bg-green-100 [&>div]:bg-green-600" />
@@ -476,7 +476,7 @@ export const FarmerSignup: React.FC<FarmerSignupProps> = ({
                 onClick={handleSubmit}
                 className="bg-green-600 hover:bg-green-700 text-white min-w-[150px] shadow-md transition-all"
               >
-                {mode === "update" ? "Update Profile" : t("completeSetup")}
+                {mode === "update" ? t("updateProfile") : t("completeSetup")}
               </Button>
             )}
           </div>

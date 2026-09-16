@@ -27,6 +27,9 @@ export const translations = {
     farmArea: "Farm Area (Acres)",
     irrigationType: "Irrigation Type",
     createAccount: "Create Account",
+    updateFarmProfile: "Update Farm Profile",
+    updateProfile: "Update Profile",
+    createAgribotAccount: "Create AGRIBOT Account",
 
     // Crops
     wheat: "Wheat",
@@ -277,6 +280,9 @@ export const translations = {
     farmArea: "खेत का क्षेत्रफल (एकड़)",
     irrigationType: "सिंचाई का प्रकार",
     createAccount: "खाता बनाएं",
+    updateFarmProfile: "फार्म प्रोफ़ाइल अपडेट करें",
+    updateProfile: "प्रोफ़ाइल अपडेट करें",
+    createAgribotAccount: "एग्रीबोट खाता बनाएं",
 
     // Crops
     wheat: "गेहूं",
@@ -527,6 +533,9 @@ export const translations = {
     farmArea: "शेताचे क्षेत्रफळ (एकर)",
     irrigationType: "सिंचनाचा प्रकार",
     createAccount: "खाते तयार करा",
+    updateFarmProfile: "शेतीची प्रोफाइल अपडेट करा",
+    updateProfile: "प्रोफाइल अपडेट करा",
+    createAgribotAccount: "ॲग्रीबोट खाते तयार करा",
 
     // Crops
     wheat: "गहू",
