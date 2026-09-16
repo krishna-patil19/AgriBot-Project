@@ -68,10 +68,6 @@ export class SarvamClient {
         }
     }
 
-    /**
-     * Translate text using Mayura v1
-     * Mayura has a 1000 character limit per request, so we chunk long texts.
-     */
     async translate(text: string, source: string, target: string): Promise<string> {
         const apiKey = this.key
         if (!apiKey) throw new Error("SARVAM_API_KEY is missing")
@@ -82,13 +78,49 @@ export class SarvamClient {
 
         console.log(`[Sarvam Translate] Request: ${srcCode} -> ${tgtCode}, length: ${text.length} chars`)
 
-        const MAX_CHARS = 900
-        if (text.length > MAX_CHARS) {
-            console.log(`[Sarvam Translate] Text exceeds ${MAX_CHARS} chars, chunking...`)
-            return this.translateChunked(text, srcCode, tgtCode, MAX_CHARS)
+        // Split by lines to strictly preserve Markdown formatting (bullet points, headers)
+        // because translation APIs often strip or flatten newlines.
+        const lines = text.split('\n')
+        const translatedLines: string[] = []
+
+        // Process sequentially to respect rate limits
+        for (const line of lines) {
+            if (!line.trim()) {
+                translatedLines.push("")
+                continue
+            }
+
+            // Extract Markdown list formatting (- , * , 1. ) to preserve it
+            const match = line.match(/^(\s*[-*0-9.]+\s+)(.*)/)
+            let prefix = ""
+            let content = line
+
+            if (match) {
+                prefix = match[1]
+                content = match[2]
+            }
+
+            if (!content.trim()) {
+                translatedLines.push(line)
+                continue
+            }
+
+            try {
+                let translated = ""
+                // If a single line is still too long, chunk by sentences
+                if (content.length > 900) {
+                    translated = await this.translateChunked(content, srcCode, tgtCode, 900)
+                } else {
+                    translated = await this.translateSingle(content, srcCode, tgtCode)
+                }
+                translatedLines.push(prefix + translated)
+            } catch (err) {
+                console.warn("[Sarvam Translate] Line translation failed, falling back to original:", err)
+                translatedLines.push(line)
+            }
         }
 
-        return this.translateSingle(text, srcCode, tgtCode)
+        return translatedLines.join("\n")
     }
 
     private async translateSingle(text: string, source: string, target: string): Promise<string> {
@@ -104,8 +136,6 @@ export class SarvamClient {
                 enable_preprocessing: true,
             }
 
-            console.log("[Sarvam Translate] Sending request:", JSON.stringify(body).substring(0, 200))
-
             const response = await fetch(`${this.baseUrl}/translate`, {
                 method: "POST",
                 headers: {
@@ -116,69 +146,43 @@ export class SarvamClient {
             })
 
             if (!response.ok) {
-                const err = await response.text()
-                console.error("[Sarvam Translate] API Error:", response.status, err)
-                throw new Error(`Sarvam Translation Error ${response.status}: ${err}`)
+                throw new Error(`Sarvam Translation Error ${response.status}`)
             }
 
             const data = await response.json()
-            console.log("[Sarvam Translate] Success, translated:", data.translated_text?.substring(0, 80))
             return data.translated_text || ""
         } catch (error) {
-            console.error("[Sarvam Translate] Failed:", error)
             throw error
         }
     }
 
     /**
-     * Translate long text by splitting into paragraphs first to preserve structure
+     * Translate a very long single line by splitting into sentences
      */
     private async translateChunked(text: string, source: string, target: string, maxChars: number): Promise<string> {
-        // Split by paragraphs first (double newline)
-        const paragraphs = text.split(/\n\n+/)
-        const translatedParagraphs: string[] = []
+        const sentences = text.split(/(?<=[.!?])\s+/)
+        const sentenceChunks: string[] = []
+        let current = ""
 
-        for (const paragraph of paragraphs) {
-            if (!paragraph.trim()) {
-                translatedParagraphs.push("")
-                continue
-            }
-
-            // If a single paragraph is still too long, split by sentences
-            if (paragraph.length > maxChars) {
-                const sentences = paragraph.split(/(?<=[.!?])\s+/)
-                const sentenceChunks: string[] = []
-                let current = ""
-
-                for (const sentence of sentences) {
-                    if ((current + " " + sentence).length > maxChars && current.length > 0) {
-                        sentenceChunks.push(current.trim())
-                        current = sentence
-                    } else {
-                        current = current ? current + " " + sentence : sentence
-                    }
-                }
-                if (current.trim()) sentenceChunks.push(current.trim())
-
-                const translatedChunks: string[] = []
-                for (const chunk of sentenceChunks) {
-                    try {
-                        translatedChunks.push(await this.translateSingle(chunk, source, target))
-                    } catch {
-                        translatedChunks.push(chunk)
-                    }
-                }
-                translatedParagraphs.push(translatedChunks.join(" "))
+        for (const sentence of sentences) {
+            if ((current + " " + sentence).length > maxChars && current.length > 0) {
+                sentenceChunks.push(current.trim())
+                current = sentence
             } else {
-                try {
-                    translatedParagraphs.push(await this.translateSingle(paragraph, source, target))
-                } catch {
-                    translatedParagraphs.push(paragraph)
-                }
+                current = current ? current + " " + sentence : sentence
             }
         }
+        if (current.trim()) sentenceChunks.push(current.trim())
 
-        return translatedParagraphs.join("\n\n")
+        const translatedChunks: string[] = []
+        for (const chunk of sentenceChunks) {
+            try {
+                translatedChunks.push(await this.translateSingle(chunk, source, target))
+            } catch {
+                translatedChunks.push(chunk)
+            }
+        }
+        return translatedChunks.join(" ")
     }
 
     /**
