@@ -57,6 +57,13 @@ function translateCrop(crop: string, lang: string): string {
   return CROP_TRANSLATIONS[crop.toLowerCase()]?.[lang] || crop
 }
 
+function translateNumber(num: string | number, lang: string): string {
+  const strNum = String(num)
+  if (lang === 'en') return strNum
+  const devDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९']
+  return strNum.replace(/\d/g, match => devDigits[parseInt(match)])
+}
+
 export const ALERT_RULES: AlertRule[] = [
   {
     id: "high-temp",
@@ -65,8 +72,9 @@ export const ALERT_RULES: AlertRule[] = [
         const t = Math.round(data.weather.main.temp)
         const c = data.farmer?.crops?.[0] || 'crops'
         const tc = translateCrop(c, lang)
-        if (lang === 'hi') return `${t}°C तापमान होने की संभावना है — अपनी ${tc} फसल को बचाने के लिए सिंचाई बढ़ाएं।`
-        if (lang === 'mr') return `${t}°C तापमान असण्याची शक्यता आहे — तुमचे ${tc} पीक वाचवण्यासाठी सिंचन वाढवा.`
+        const tt = translateNumber(t, lang)
+        if (lang === 'hi') return `${tt}°C तापमान होने की संभावना है — अपनी ${tc} फसल को बचाने के लिए सिंचाई बढ़ाएं।`
+        if (lang === 'mr') return `${tt}°C तापमान असण्याची शक्यता आहे — तुमचे ${tc} पीक वाचवण्यासाठी सिंचन वाढवा.`
         return `Temperature of ${t}°C expected — increase irrigation frequency to protect your ${tc}.`
     },
     priority: "high",
@@ -106,8 +114,9 @@ export const ALERT_RULES: AlertRule[] = [
         const price = p?.modal_price || '0'
         const mandi = p?.market || 'mandi'
         const tc = translateCrop(crop, lang)
-        if (lang === 'hi') return `${mandi} मंडी में ${tc} का अच्छा भाव (₹${price}/क्विंटल) — जल्द बेचने पर विचार करें।`
-        if (lang === 'mr') return `${mandi} मंडईत ${tc} चा चांगला भाव (₹${price}/क्विंटल) — लवकर विकण्याचा विचार करा.`
+        const tp = translateNumber(price, lang)
+        if (lang === 'hi') return `${mandi} मंडी में ${tc} का अच्छा भाव (₹${tp}/क्विंटल) — जल्द बेचने पर विचार करें।`
+        if (lang === 'mr') return `${mandi} मंडईत ${tc} चा चांगला भाव (₹${tp}/क्विंटल) — लवकर विकण्याचा विचार करा.`
         return `Good price for ${tc} (₹${price}/Quintal) at ${mandi} mandi — consider selling soon.`
     },
     priority: "medium",
