@@ -1,16 +1,22 @@
-const PRIMARY_MODEL = "openai/gpt-oss-120b"
-const FALLBACK_MODEL = "qwen/qwen3.8-27b"
+const MODEL_CANDIDATES: Array<{ provider: "groq" | "openai"; model: string; baseUrl: string }> = [
+  { provider: "groq", model: "openai/gpt-oss-120b", baseUrl: "https://api.groq.com/openai/v1" },
+  { provider: "groq", model: "qwen/qwen3.8-27b", baseUrl: "https://api.groq.com/openai/v1" },
+  { provider: "openai", model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1" },
+  { provider: "openai", model: "gpt-4o", baseUrl: "https://api.openai.com/v1" },
+]
 
 export class GroqClient {
-  private baseUrl = "https://api.groq.com/openai/v1"
-
-  private get key(): string {
+  private get groqKey(): string {
     return process.env.GROQ_API_KEY || ""
   }
 
+  private get openAiKey(): string {
+    return process.env.OPENAI_API_KEY || ""
+  }
+
   constructor() {
-    if (!this.key && typeof window === "undefined") {
-      console.warn("[RAG] Warning: GROQ_API_KEY is not defined in environment variables.")
+    if (!this.groqKey && !this.openAiKey && typeof window === "undefined") {
+      console.warn("[RAG] Warning: Neither GROQ_API_KEY nor OPENAI_API_KEY is defined in environment variables.")
     }
   }
 
@@ -22,7 +28,7 @@ export class GroqClient {
   }
 
   /**
-   * RAG-enhanced response generation with model fallback
+   * RAG-enhanced response generation with resilient multi-provider model fallback
    */
   async generateRAGResponse(
     agentId: string,
@@ -49,18 +55,15 @@ export class GroqClient {
       { role: "user", content: prompt },
     ]
 
-    // Try primary model first, then fallback
-    for (const model of [PRIMARY_MODEL, FALLBACK_MODEL]) {
+    // Multi-provider fallback chain (Groq -> OpenAI)
+    for (const candidate of MODEL_CANDIDATES) {
+      const apiKey = candidate.provider === "groq" ? this.groqKey : this.openAiKey
+      if (!apiKey) continue
+
       try {
-        const apiKey = this.key
-        if (!apiKey) {
-          console.error("[RAG] Cannot generate response: Missing GROQ_API_KEY")
-          return this.getFallbackResponse(agentId, language)
-        }
+        console.log(`[RAG] Attempting generation with ${candidate.provider}:${candidate.model} for agent: ${agentId}`)
 
-        console.log(`[RAG] Calling Groq with model: ${model} for agent: ${agentId}`)
-
-        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        const response = await fetch(`${candidate.baseUrl}/chat/completions`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -68,7 +71,7 @@ export class GroqClient {
           },
           body: JSON.stringify({
             messages,
-            model,
+            model: candidate.model,
             temperature: 0.7,
             max_tokens: 2048,
             top_p: 0.9,
@@ -78,29 +81,24 @@ export class GroqClient {
 
         if (!response.ok) {
           const errorText = await response.text()
-          console.error(`[RAG] Groq API error with ${model}:`, errorText)
-          if (model === PRIMARY_MODEL) {
-            console.log("[RAG] Falling back to secondary model...")
-            continue
-          }
-          throw new Error(`Groq API error: ${response.status}`)
+          console.warn(`[RAG] ${candidate.provider}:${candidate.model} failed (${response.status}):`, errorText)
+          continue
         }
 
         const data = await response.json()
         const content = data.choices[0]?.message?.content
 
-        if (content) {
-          console.log(`[RAG] Response generated successfully with ${model}`)
+        if (content && content.trim().length > 0) {
+          console.log(`[RAG] Response generated successfully with ${candidate.provider}:${candidate.model}`)
           return content
         }
-      } catch (error) {
-        console.error(`[RAG] Error with model ${model}:`, error)
-        if (model === FALLBACK_MODEL) {
-          return this.getFallbackResponse(agentId, language)
-        }
+      } catch (error: any) {
+        console.warn(`[RAG] Exception with ${candidate.provider}:${candidate.model}:`, error.message)
+        continue
       }
     }
 
+    console.error("[RAG] All primary and fallback models exhausted. Using default fallback.")
     return this.getFallbackResponse(agentId, language)
   }
 
@@ -109,8 +107,6 @@ export class GroqClient {
    */
   async extractCommodityAndLocation(message: string): Promise<{ commodity: string; state: string } | null> {
     try {
-      if (!this.key) return null;
-
       const systemPrompt = `You are an expert entity extraction AI for Indian agriculture.
 Your task is to extract the agricultural 'commodity' and the Indian 'state' from the user's message.
 
@@ -120,34 +116,44 @@ CRITICAL RULES:
 3. If the state is not mentioned, use "". If no commodity is found, use "".
 4. Ensure the commodity is a standard agricultural term in Title Case.`;
 
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.key}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: message },
-          ],
-          model: FALLBACK_MODEL, // Use the faster model
-          temperature: 0.1,
-          response_format: { type: "json_object" }
-        }),
-      })
+      for (const candidate of MODEL_CANDIDATES) {
+        const apiKey = candidate.provider === "groq" ? this.groqKey : this.openAiKey
+        if (!apiKey) continue
 
-      if (!response.ok) return null;
+        try {
+          const response = await fetch(`${candidate.baseUrl}/chat/completions`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: message },
+              ],
+              model: candidate.model,
+              temperature: 0.1,
+              response_format: { type: "json_object" }
+            }),
+          })
 
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content;
-      if (!content) return null;
+          if (!response.ok) continue
 
-      const parsed = JSON.parse(content);
-      return {
-        commodity: parsed.commodity || "",
-        state: parsed.state || ""
-      };
+          const data = await response.json();
+          const content = data.choices[0]?.message?.content;
+          if (!content) continue
+
+          const parsed = JSON.parse(content);
+          return {
+            commodity: parsed.commodity || "",
+            state: parsed.state || ""
+          };
+        } catch {
+          continue
+        }
+      }
+      return null;
     } catch (e) {
       console.error("[Groq] Entity extraction failed:", e);
       return null;

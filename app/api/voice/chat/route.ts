@@ -1,9 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import Groq from "groq-sdk"
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || "",
-})
+import { groqClient } from "@/lib/groq-client"
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,22 +13,18 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Voice Chat] Processing query in ${language}: "${text.substring(0, 50)}..."`)
 
-    // Step 1: Generate response directly in the user's language
-    // Llama 3.3 handles regional languages natively with MUCH higher accuracy
-    // and context awareness than the double translation approach.
     const systemPrompt = getVoiceSystemPrompt(language, farmerData)
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: text },
-      ],
-      temperature: 0.7,
-      max_tokens: 1024,
-    })
-
-    const response = completion.choices[0]?.message?.content || "I'm processing your request..."
+    // Use GroqClient's multi-provider generation
+    const response = await groqClient.generateRAGResponse(
+      "agri-bot",
+      text,
+      "",
+      language,
+      [],
+      [],
+      systemPrompt
+    )
 
     console.log("[Voice Chat] Response generated successfully")
 
