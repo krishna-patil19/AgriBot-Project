@@ -36,21 +36,21 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Fallback or English: Use OpenAI
+        // Clean text of markdown, bullet points, technical symbols for natural conversational speech
+        const cleanText = sarvamClient.prepareTextForSpeech(text, language)
+
+        if (!cleanText) {
+            return NextResponse.json({ error: "No speakable text found" }, { status: 400 })
+        }
+
+        // Limit length to avoid timeouts on very long texts (up to ~800 chars for smooth playback)
+        const ttsText = cleanText.length > 800 ? cleanText.substring(0, 797) + "..." : cleanText
+
+        // Fallback or English: Use OpenAI HD TTS with the natural, warm 'nova' voice
         const openAiApiKey = process.env.OPENAI_API_KEY;
         if (!openAiApiKey) {
             throw new Error("No OPENAI_API_KEY set in environment")
         }
-
-        // Clean text of markdown and technical symbols for OpenAI
-        const cleanText = text
-            .replace(/```[\s\S]*?```/g, "")
-            .replace(/#+\s/g, "")
-            .replace(/[*_~`]/g, "")
-            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
-            .replace(/\|/g, " ")
-            .replace(/\n+/g, " ")
-            .trim()
 
         const openaiResponse = await fetch("https://api.openai.com/v1/audio/speech", {
             method: "POST",
@@ -59,15 +59,17 @@ export async function POST(request: NextRequest) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                model: "tts-1",
-                input: cleanText,
-                voice: "shimmer",
+                model: "tts-1-hd",
+                input: ttsText,
+                voice: "nova",
+                speed: 1.0,
                 response_format: "mp3"
             })
         });
 
         if (!openaiResponse.ok) {
-            throw new Error(`OpenAI API Error: ${openaiResponse.status}`);
+            const errText = await openaiResponse.text();
+            throw new Error(`OpenAI API Error ${openaiResponse.status}: ${errText}`);
         }
 
         const arrayBuffer = await openaiResponse.arrayBuffer();

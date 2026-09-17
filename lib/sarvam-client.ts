@@ -186,21 +186,41 @@ export class SarvamClient {
     }
 
     /**
-     * Text-to-Speech using Bulbul v2
+     * Text-to-Speech using Sarvam Bulbul v3
      */
     async textToSpeech(text: string, language: string = "hi"): Promise<string> {
         const apiKey = this.key
         if (!apiKey) throw new Error("SARVAM_API_KEY is missing")
 
         // Convert structured AI response into natural spoken text
-        const cleanText = this.prepareTextForSpeech(text)
+        const cleanText = this.prepareTextForSpeech(text, language)
 
-        // TTS has limits — truncate to ~500 chars for voice
-        const ttsText = cleanText.length > 500 ? cleanText.substring(0, 497) + "." : cleanText
+        if (!cleanText) return ""
 
-        // Map language codes correctly — Marathi gets native speaker 'rupali'
+        // Sarvam Bulbul v3 per-request max characters recommendation (~500-800 chars)
+        // Ensure we cut at a sentence boundary rather than midway through words
+        let ttsText = cleanText
+        if (ttsText.length > 700) {
+            const truncated = ttsText.substring(0, 700)
+            const lastBreak = Math.max(
+                truncated.lastIndexOf("।"),
+                truncated.lastIndexOf("."),
+                truncated.lastIndexOf("!"),
+                truncated.lastIndexOf("?")
+            )
+            ttsText = (lastBreak > 200 ? truncated.substring(0, lastBreak + 1) : truncated).trim()
+            if (!ttsText.match(/[.!?।]$/)) {
+                ttsText += language === "hi" || language === "mr" ? "।" : "."
+            }
+        }
+
+        // Available Bulbul v3 speakers: aditya, ritu, ashutosh, priya, neha, rahul, pooja, rohan, simran, kavya, amit, dev, ishita, shreya, ratan, varun, manan, sumit, roopa, kabir, aayan, shubh, advait, anand, tanya, tarun, sunny, mani, gokul, vijay, shruti, suhani, mohit, kavitha, rehan, soham, rupali
+        // Best expressive natural voices:
+        // - Marathi (mr): 'rupali' (natural, clear Marathi) or 'soham'
+        // - Hindi (hi): 'ritu' (warm, friendly, articulate) or 'priya'
+        // - English/Others: 'priya' or 'kavya'
         const langCode = this.normalizeLangCode(language)
-        const speaker = language === "mr" ? "rupali" : language === "hi" ? "ritu" : "anushka"
+        const speaker = language === "mr" ? "rupali" : language === "hi" ? "ritu" : "priya"
         const model = "bulbul:v3"
 
         try {
@@ -216,8 +236,8 @@ export class SarvamClient {
                     model: model,
                     speaker: speaker,
                     pitch: 0,
-                    pace: 0.9,
-                    loudness: 1.2,
+                    pace: 1.0,
+                    loudness: 1.0,
                     speech_sample_rate: 24000
                 }),
             })
@@ -237,50 +257,64 @@ export class SarvamClient {
     }
 
     /**
-     * Convert structured AI text (markdown, lists, emojis) into natural spoken prose.
-     * This is critical for making TTS sound human rather than robotic.
+     * Convert structured AI text (markdown, lists, emojis, technical symbols) into natural spoken prose.
+     * This is critical for making TTS sound conversational and human rather than robotic.
      */
-    private prepareTextForSpeech(text: string): string {
+    prepareTextForSpeech(text: string, language: string = "en"): string {
+        if (!text) return ""
+
         let spoken = text
             // Remove code blocks entirely
             .replace(/```[\s\S]*?```/g, "")
-            // Remove markdown headers but keep the text
-            .replace(/#+\s/g, "")
-            // Remove bold/italic/strikethrough markers
-            .replace(/[*_~`]/g, "")
-            // Replace markdown links with just the text
-            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
-            // Remove image references
+            // Remove inline code ticks
+            .replace(/`([^`]+)`/g, "$1")
+            // Remove images
             .replace(/!\[[^\]]*\]\([^\)]+\)/g, "")
-            // Remove URLs
-            .replace(/https?:\/\/[^\s]+/g, "")
+            // Replace markdown links with just the link text
+            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+            // Remove raw URLs
+            .replace(/https?:\/\/\S+/g, "")
+            // Remove markdown headers
+            .replace(/^#+\s+/gm, "")
+            // Remove bold/italic/strikethrough markers
+            .replace(/\*\*([^*]+)\*\*/g, "$1")
+            .replace(/\*([^*]+)\*/g, "$1")
+            .replace(/__([^_]+)__/g, "$1")
+            .replace(/_([^_]+)_/g, "$1")
+            .replace(/~~([^~]+)~~/g, "$1")
             // Remove blockquote markers
-            .replace(/>\s/g, "")
+            .replace(/^\s*>\s*/gm, "")
+            // Convert list bullet points to gentle pauses
+            .replace(/^\s*[-*•]\s+/gm, "")
+            .replace(/^\s*\d+\.\s+/gm, "")
             // Remove table dividers
             .replace(/\|/g, " ")
+            // Format units and ranges smoothly
+            .replace(/(\w+)\/(\w+)/g, "$1 per $2")
+            .replace(/(\d+)\s*-\s*(\d+)/g, language === "hi" ? "$1 से $2" : language === "mr" ? "$1 ते $2" : "$1 to $2")
+            .replace(/(\d+)%/g, language === "hi" ? "$1 प्रतिशत" : language === "mr" ? "$1 टक्के" : "$1 percent")
             // Remove all emojis
             .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2702}-\u{27B0}]/gu, "")
-
-        // Replace line breaks with natural pauses (periods)
-        // Multiple newlines = stronger pause
-        spoken = spoken
+            // Replace multiple newlines with natural pauses
             .replace(/\n{2,}/g, ". ")
             .replace(/\n/g, ", ")
-
-        // Clean up leftover symbols
-        spoken = spoken
-            .replace(/[^a-zA-Z0-9\s\u0900-\u097F\u0980-\u09FF.,!?;:'"()-]/g, " ")
-            // Fix double punctuation from conversions
-            .replace(/[.,]{2,}/g, ".")
+            // Clean up special characters while strictly preserving Devanagari and Latin letters
+            .replace(/[^a-zA-Z0-9\s\u0900-\u097F\u0980-\u09FF.,!?;:।'"()-]/g, " ")
+            // Clean up repetitive or doubled punctuation
+            .replace(/\s+([.,!?;:।])/g, "$1")
+            .replace(/([.,!?;:।])\1+/g, "$1")
             .replace(/,\s*\./g, ".")
             .replace(/\.\s*,/g, ".")
-            // Collapse multiple spaces
+            // Collapse whitespace
             .replace(/\s+/g, " ")
             .trim()
 
-        // Ensure text ends with proper punctuation for natural stopping
-        if (spoken && !spoken.match(/[.!?]$/)) {
-            spoken += "."
+        // Strip any leading punctuation
+        spoken = spoken.replace(/^[.,!?;:।\s]+/, "").trim()
+
+        // Ensure text ends with proper sentence termination
+        if (spoken && !spoken.match(/[.!?।]$/)) {
+            spoken += language === "hi" || language === "mr" ? "।" : "."
         }
 
         return spoken
