@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
 
         console.log(`[Vision] Processing image for agent: ${agentId} in language: ${language}`)
 
-        const apiKey = process.env.GROQ_API_KEY || ""
+        const openaiKey = process.env.OPENAI_API_KEY || ""
+        const groqKey = process.env.GROQ_API_KEY || ""
 
         // Step 1: Optional RAG search to assist vision model with expert knowledge
         let ragContext = ""
@@ -31,28 +32,37 @@ export async function POST(request: NextRequest) {
         const systemPrompt = getVisionPrompt(agentId, language, ragContext)
         const userPrompt = prompt || "Analyze this image. First, identify the crop/plant. Then, identify any diseases, pests, or issues. Suggest treatments based on the provided context."
 
-        // Step 2: Analysis using Groq Vision
-        // Llama 4 Scout is the latest stable vision model on Groq as of March 2026
-        const primaryModel = "meta-llama/llama-4-scout-17b-16e-instruct"
-        const secondaryModel = "pixtral-12b"
-        const fallbackModel = "llama-3.2-90b-vision-preview"
+        // Multi-provider vision model candidates
+        const modelConfigs: Array<{ provider: "openai" | "groq"; model: string; key: string; url: string }> = []
 
-        const tryModels = [primaryModel, secondaryModel, fallbackModel]
+        if (openaiKey) {
+            modelConfigs.push(
+                { provider: "openai", model: "gpt-4o-mini", key: openaiKey, url: "https://api.openai.com/v1/chat/completions" },
+                { provider: "openai", model: "gpt-4o", key: openaiKey, url: "https://api.openai.com/v1/chat/completions" }
+            )
+        }
+
+        if (groqKey) {
+            modelConfigs.push(
+                { provider: "groq", model: "llama-3.2-11b-vision-preview", key: groqKey, url: "https://api.groq.com/openai/v1/chat/completions" }
+            )
+        }
+
         let analysis = ""
         let finalModel = ""
         let lastError = ""
 
-        for (const modelId of tryModels) {
+        for (const config of modelConfigs) {
             try {
-                console.log(`[Vision] Attempting analysis with model: ${modelId}`)
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                console.log(`[Vision] Attempting analysis with provider: ${config.provider}, model: ${config.model}`)
+                const response = await fetch(config.url, {
                     method: "POST",
                     headers: {
-                        Authorization: `Bearer ${apiKey}`,
+                        Authorization: `Bearer ${config.key}`,
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        model: modelId,
+                        model: config.model,
                         messages: [
                             { role: "system", content: systemPrompt },
                             {
@@ -68,7 +78,7 @@ export async function POST(request: NextRequest) {
                                 ],
                             },
                         ],
-                        temperature: 0.1,
+                        temperature: 0.2,
                         max_tokens: 1024,
                     }),
                 })
@@ -77,16 +87,16 @@ export async function POST(request: NextRequest) {
                     const data = await response.json()
                     analysis = data.choices[0]?.message?.content || ""
                     if (analysis) {
-                        finalModel = modelId
+                        finalModel = `${config.provider}:${config.model}`
                         break
                     }
                 } else {
                     const err = await response.text()
-                    console.warn(`[Vision] Model ${modelId} failed:`, err)
+                    console.warn(`[Vision] Model ${config.model} failed:`, err)
                     lastError = `${response.status} - ${err}`
                 }
             } catch (e: any) {
-                console.error(`[Vision] Exception with ${modelId}:`, e)
+                console.error(`[Vision] Exception with ${config.model}:`, e)
                 lastError = e.message
             }
         }
@@ -101,8 +111,7 @@ export async function POST(request: NextRequest) {
             })
         }
 
-
-        console.log("[Vision] Analysis complete")
+        console.log(`[Vision] Analysis complete using ${finalModel}`)
 
         return NextResponse.json({
             success: true,
