@@ -397,8 +397,10 @@ export function needsLiveSearch(query: string): boolean {
     const lowerQuery = query.toLowerCase()
     const liveKeywords = [
         "today", "now", "currently", "latest", "war", "conflict", "israel", "iran",
-        "news", "breaking", "russia", "ukraine", "election", "budget 2024", "budget 2025",
-        "recent", "newest", "price", "cost", "how much", "rate", "live"
+        "news", "breaking", "russia", "ukraine", "election", "budget 2024", "budget 2025", "budget 2026",
+        "recent", "newest", "price", "cost", "how much", "rate", "live", "mandi",
+        "scheme", "subsidy", "yojana", "mahadbt", "pm-kisan", "pmkisan", "pmfby", "magel tyala",
+        "installment", "last date", "deadline", "apply", "eligibility", "portal", "2024", "2025", "2026"
     ]
 
     return liveKeywords.some(keyword => lowerQuery.includes(keyword))

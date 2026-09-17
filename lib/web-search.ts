@@ -2,8 +2,14 @@ export async function performWebSearch(query: string): Promise<string> {
     console.log(`[v0] Performing enhanced live web search for: "${query}"`);
 
     try {
-        // Broaden the search query for better results if it's a price query
-        const refinedQuery = query.toLowerCase().includes("price") ? `${query} mandi rate today` : query;
+        // Broaden and specialize the search query for better live results
+        let refinedQuery = query;
+        const lower = query.toLowerCase();
+        if (lower.includes("price") || lower.includes("rate") || lower.includes("mandi") || lower.includes("भाव") || lower.includes("दर")) {
+            refinedQuery = `${query} mandi rate today`;
+        } else if (lower.includes("scheme") || lower.includes("subsidy") || lower.includes("yojana") || lower.includes("mahadbt") || lower.includes("pm-kisan") || lower.includes("योजना")) {
+            refinedQuery = `${query} government scheme portal India Maharashtra`;
+        }
 
         const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(refinedQuery)}`, {
             headers: {
